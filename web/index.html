@@ -1,0 +1,1503 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diana — ONFF Zones</title>
+<meta name="theme-color" content="#1b4332">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="vendor/maplibre-gl.css">
+<style>
+  :root{
+    --ink:#12291d; --ink-2:#3d5c4a; --ink-3:#6b8577;
+    --paper:#f6f4ee; --card:#ffffff; --line:#e3e0d6;
+    --green:#1b4332; --green-2:#2d6a4f; --leaf:#52b788;
+    --amber:#d97706; --amber-soft:#fef3e2;
+    --radius:14px; --shadow:0 2px 10px rgba(18,41,29,.10), 0 8px 28px rgba(18,41,29,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--paper); overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  #map{position:absolute;inset:0}
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    position:absolute; top:0; left:0; right:0; z-index:5;
+    display:flex; gap:8px; align-items:center;
+    padding:12px 12px 0; pointer-events:none;
+  }
+  .topbar > *{pointer-events:auto}
+  .brand{
+    display:flex; align-items:center; gap:9px;
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:8px 14px 8px 9px; font-weight:650; letter-spacing:-.01em;
+  }
+  .brand .mark{
+    width:28px;height:28px;border-radius:9px;background:var(--green);
+    display:grid;place-items:center;color:#fff;font-size:15px;
+  }
+  .spacer{flex:1}
+  .iconbtn{
+    width:42px;height:42px;border:0;border-radius:12px;background:var(--card);
+    box-shadow:var(--shadow); cursor:pointer; font-size:17px; color:var(--ink-2);
+    display:grid;place-items:center;
+  }
+  .iconbtn:hover{color:var(--green)}
+  .iconbtn[aria-expanded="true"]{background:var(--green);color:#fff}
+
+  .counts{
+    position:absolute; z-index:5; top:64px; left:12px;
+    background:var(--card); border-radius:999px; box-shadow:var(--shadow);
+    padding:6px 14px; font-size:13px; color:var(--ink-2);
+  }
+  .counts b{color:var(--ink); font-weight:650}
+
+  /* ---------- panels ---------- */
+  .pop{
+    position:absolute; z-index:6; top:64px; right:12px; width:236px;
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:14px; display:none;
+  }
+  .pop.open{display:block}
+  .pop h4{
+    margin:0 0 9px; font-size:11px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:650;
+  }
+  .pop + .pop{top:64px; right:262px}
+  .opt{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 10px; border-radius:9px; cursor:pointer; font-size:14px;
+  }
+  .opt:hover{background:var(--paper)}
+  .opt.on{background:#e8f3ec; color:var(--green); font-weight:600}
+  .opt.disabled{color:var(--ink-3); cursor:default}
+  .opt.disabled:hover{background:none}
+  .sw{
+    width:36px;height:21px;border-radius:999px;background:#d8d4c8;position:relative;
+    flex:0 0 auto; transition:background .15s;
+  }
+  .sw::after{
+    content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2); transition:transform .15s;
+  }
+  .sw.on{background:var(--leaf)}
+  .sw.on::after{transform:translateX(15px)}
+  .hint{margin:8px 2px 0;font-size:12px;color:var(--ink-3)}
+
+  /* ---------- search ---------- */
+  .search{
+    position:absolute; z-index:6; top:64px; left:12px; width:min(320px,calc(100% - 24px));
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:10px; display:none;
+  }
+  .search.open{display:block}
+  body.searching .counts{display:none}
+  .search input{
+    width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+    font:inherit; color:inherit; background:var(--paper);
+  }
+  .search input:focus{outline:2px solid var(--leaf); outline-offset:1px; background:#fff}
+  .results{max-height:min(46vh,340px); overflow:auto; margin-top:8px}
+  .res{padding:9px 10px;border-radius:9px;cursor:pointer;display:flex;gap:10px;align-items:baseline}
+  .res:hover{background:var(--paper)}
+  .res .r{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green-2);flex:0 0 auto}
+  .res .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .res .p{font-size:12px;color:var(--ink-3);flex:0 0 auto}
+
+  /* ---------- detail sheet ---------- */
+  .sheet{
+    position:absolute; z-index:7; left:0; right:0; bottom:0;
+    background:var(--card); border-radius:20px 20px 0 0; box-shadow:0 -6px 30px rgba(18,41,29,.16);
+    padding:10px 16px calc(18px + env(safe-area-inset-bottom));
+    transform:translateY(102%); transition:transform .22s cubic-bezier(.3,.8,.3,1);
+    max-height:72vh; overflow:auto;
+  }
+  .sheet.open{transform:none}
+  .grip{width:38px;height:4px;border-radius:99px;background:var(--line);margin:2px auto 12px}
+  .badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .pill{
+    font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace; padding:6px 9px; border-radius:7px;
+    background:var(--amber-soft); color:#92400e; font-weight:600;
+  }
+  .pill.grey{background:var(--paper);color:var(--ink-3);font-family:inherit;font-weight:500}
+  .sheet h2{margin:2px 0 14px;font-size:23px;letter-spacing:-.02em}
+  .facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fact{background:var(--paper);border-radius:11px;padding:10px 12px}
+  .fact .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650}
+  .fact .v{margin-top:3px;font-weight:600;color:var(--green)}
+  .fact.wide{grid-column:1/-1}
+  .note{margin-top:12px;font-size:12.5px;color:var(--ink-3)}
+  .closex{position:absolute;top:14px;right:14px;border:0;background:none;font-size:20px;color:var(--ink-3);cursor:pointer}
+
+  /* ---------- spots ---------- */
+  .pop.wide{width:300px}
+  .segs{display:flex;gap:4px;background:var(--paper);padding:3px;border-radius:10px;margin-bottom:10px}
+  .seg{
+    flex:1;border:0;background:none;padding:7px 0;border-radius:8px;font:inherit;font-size:13px;
+    color:var(--ink-2);cursor:pointer;
+  }
+  .seg.on{background:var(--green);color:#fff;font-weight:600}
+  .spotlist{max-height:min(50vh,380px);overflow:auto;margin:0 -4px}
+  .spot{
+    display:flex;gap:10px;align-items:center;padding:9px 8px;border-radius:10px;cursor:pointer;
+  }
+  .spot:hover{background:var(--paper)}
+  .spot.stale{opacity:.5}
+  .spot .sig{
+    width:34px;height:34px;border-radius:10px;background:var(--amber-soft);color:#b45309;
+    display:grid;place-items:center;font-size:14px;flex:0 0 auto;
+  }
+  .spot .who{flex:1;min-width:0}
+  .spot .c{font-weight:650;letter-spacing:-.01em}
+  .spot .f{font-size:12.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .spot .d{text-align:right;flex:0 0 auto;font-size:12.5px;color:var(--ink-3);line-height:1.35}
+  .spot .d b{display:block;color:var(--green-2);font-size:13px}
+  .spothead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .call{font-size:24px;font-weight:700;letter-spacing:-.02em}
+  .ago{font-size:12.5px;color:var(--ink-3);margin-top:2px}
+  .bearing{
+    display:flex;align-items:center;gap:14px;margin-top:10px;background:var(--paper);
+    border-radius:12px;padding:12px 14px;
+  }
+  .compass{
+    width:52px;height:52px;border-radius:50%;border:1.5px solid var(--line);background:#fff;
+    position:relative;flex:0 0 auto;
+  }
+  .compass .needle{
+    position:absolute;left:50%;top:50%;width:2px;height:20px;background:var(--amber);
+    transform-origin:50% 100%;border-radius:2px;
+  }
+  .compass .n{position:absolute;top:2px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--ink-3)}
+  .bearing .bg{font-size:19px;font-weight:700;color:var(--green)}
+  .bearing .bs{font-size:12.5px;color:var(--ink-3);margin-top:1px}
+
+  /* ---------- onderbalk & volledige schermen ---------- */
+  .nav{
+    position:absolute;z-index:9;left:0;right:0;bottom:0;display:flex;
+    background:var(--card);border-top:1px solid var(--line);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .nav button{
+    flex:1;border:0;background:none;cursor:pointer;padding:6px 2px;border-radius:10px;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    font:inherit;font-size:11px;color:var(--ink-3);
+  }
+  .nav button .ic{font-size:17px;line-height:1}
+  .nav button[data-view="viewSpots"] .ic{font-size:12px;font-weight:700}
+  .nav button.on{color:var(--green);font-weight:650}
+  body.has-nav .sheet{bottom:62px}
+  body.has-nav .status{bottom:78px}
+  body.has-nav .maplibregl-ctrl-bottom-right{margin-bottom:66px}
+
+  .view{
+    position:absolute;z-index:8;inset:0 0 62px;background:var(--paper);
+    overflow:auto;padding:16px 16px 28px;display:none;
+  }
+  .view.on{display:block}
+  .view h1{font-size:22px;letter-spacing:-.02em;margin:4px 0 2px}
+  .view .sub{color:var(--ink-3);font-size:13.5px;margin:0 0 16px}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+  .btn{
+    width:100%;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:650;
+    cursor:pointer;background:var(--green);color:#fff;font-size:15px;
+  }
+  .btn.amber{background:var(--amber)}
+  .btn.ghost{background:var(--paper);color:var(--ink-2);border:1px solid var(--line)}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+  .btn + .btn{margin-top:8px}
+
+  /* sessie */
+  .banner{border-radius:12px;padding:12px 14px;display:flex;gap:11px;align-items:center;margin-bottom:12px}
+  .banner.in{background:#e8f3ec;color:var(--green-2)}
+  .banner.out{background:var(--paper);color:var(--ink-3)}
+  .banner .b1{font-weight:650}
+  .banner .b2{font-size:12.5px;opacity:.85}
+  .clock{font-size:42px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .rec{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:650;color:#b91c1c;text-transform:uppercase;letter-spacing:.06em}
+  .rec .d{width:9px;height:9px;border-radius:50%;background:#dc2626;animation:pulse 1.6s infinite}
+  @keyframes pulse{50%{opacity:.25}}
+  .srow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .srow .r{font-size:12.5px;color:var(--ink-3)}
+  .privacy{font-size:12px;color:var(--ink-3);margin-top:10px;display:flex;gap:7px}
+
+  /* bandplan */
+  .band{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:9px;background:var(--card)}
+  .band.here{border-color:var(--leaf);background:#f2f9f4}
+  .band .bh{display:flex;justify-content:space-between;align-items:baseline}
+  .band .bn{font-weight:700;font-size:16px}
+  .band .br{font-size:12.5px;color:var(--ink-3)}
+  .modes{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .mode{font-size:11.5px;padding:4px 9px;border-radius:99px;background:var(--paper);color:var(--ink-2)}
+  .wwff{margin-top:8px;background:#fdf6e3;color:#92400e;border-radius:8px;padding:7px 10px;font-size:12.5px;font-weight:600}
+  .rules td{padding:7px 0;border-bottom:1px solid var(--line);vertical-align:top;font-size:13.5px}
+  .rules td:first-child{color:var(--ink-3);width:38%;padding-right:12px}
+  .rules table{width:100%;border-collapse:collapse}
+
+  /* heatmap */
+  .legend{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--ink-3);margin-top:10px}
+  .ramp{height:9px;border-radius:99px;flex:1;
+    background:linear-gradient(90deg,#dc2626,#f59e0b,#facc15,#84cc16,#16a34a)}
+  .neg{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px}
+  .neg:last-child{border:0}
+  .neg .nr{color:var(--ink-3);font-size:12.5px;flex:0 0 auto}
+
+  /* ---------- gps status ---------- */
+  .status{
+    position:absolute; z-index:6; left:12px; right:12px; bottom:16px;
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:12px 14px; display:none; gap:12px; align-items:center;
+  }
+  .status.show{display:flex}
+  .status .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+  .status.in  .dot{background:var(--leaf)}
+  .status.near .dot{background:var(--amber)}
+  .status.out .dot{background:var(--ink-3)}
+  .status .txt{flex:1;min-width:0}
+  .status .t1{font-weight:650}
+  .status .t2{font-size:12.5px;color:var(--ink-3);margin-top:1px}
+  .status.in .t1{color:var(--green-2)}
+  .status.near .t1{color:#b45309}
+
+  /* Het detailpaneel mag de kaartknoppen en de GPS-melding niet afdekken —
+     die schuiven mee omhoog zolang het open staat. */
+  .maplibregl-ctrl-bottom-right, .status{
+    transition:transform .22s cubic-bezier(.3,.8,.3,1);
+  }
+  body.sheet-open .maplibregl-ctrl-bottom-right,
+  body.sheet-open .status{ transform:translateY(calc(-1 * var(--sheet-h, 0px))) }
+  body.embed .nav, body.embed .brand, body.embed .counts{display:none}
+  body.embed .topbar{padding-top:8px}
+  @media (max-width:520px){
+    .pop{right:12px;left:12px;width:auto}
+    .pop + .pop{right:12px;top:64px}
+    .facts{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="topbar">
+  <div class="brand"><span class="mark">◈</span> Diana</div>
+  <div class="spacer"></div>
+  <button class="iconbtn" id="btnSearch" aria-expanded="false" title="Zoeken">⌕</button>
+  <button class="iconbtn" id="btnStyle"  aria-expanded="false" title="Kaartstijl">◐</button>
+  <button class="iconbtn" id="btnLayers" aria-expanded="false" title="Lagen">≡</button>
+</div>
+<div class="counts" id="counts">data laden…</div>
+
+<div class="pop" id="popStyle">
+  <h4>Kaartstijl</h4>
+  <div class="opt on" data-style="liberty">Liberty</div>
+  <div class="opt" data-style="positron">Positron</div>
+  <div class="opt" data-style="bright">Bright</div>
+  <div class="opt" data-style="dark">Dark</div>
+</div>
+
+<div class="pop" id="popLayers">
+  <h4>Lagen</h4>
+  <div class="opt on" data-layer="onff">ONFF-gebieden <span class="sw on"></span></div>
+  <div class="opt on" data-layer="labels">Referentienummers <span class="sw on"></span></div>
+  <div class="opt" data-layer="spots">Spots &amp; agenda <span class="sw"></span></div>
+  <div class="opt disabled">BCA, BLHA… <span class="sw"></span></div>
+  <p class="hint">Spots komen live van WWFF Spotline en verversen elke 30 s.</p>
+  <button class="btn ghost" id="btnOffline" style="margin-top:6px;font-size:13.5px;padding:10px">⤓ Dit gebied offline bewaren</button>
+  <h4 style="margin-top:12px">Taal</h4>
+  <div class="segs" id="langPick">
+    <button class="seg" data-lang="nl">NL</button>
+    <button class="seg" data-lang="fr">FR</button>
+    <button class="seg" data-lang="en">EN</button>
+  </div>
+</div>
+
+<div class="search" id="search">
+  <input id="q" type="search" placeholder="Zoek op naam of ONFF-nummer…" autocomplete="off">
+  <div class="results" id="results"></div>
+</div>
+
+<div class="sheet" id="spotSheet">
+  <div class="grip"></div>
+  <button class="closex" id="closeSpot" aria-label="Sluiten">×</button>
+  <div class="spothead">
+    <div class="callwrap"><div class="call" id="spCall">—</div><div class="ago" id="spAgo"></div></div>
+    <span class="pill" id="spRef"></span>
+  </div>
+  <div class="facts" id="spFacts"></div>
+  <div class="bearing" id="spBearing"></div>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="grip"></div>
+  <button class="closex" id="closeSheet" aria-label="Sluiten">×</button>
+  <div class="badges" id="badges"></div>
+  <h2 id="zoneName">—</h2>
+  <div class="facts" id="facts"></div>
+  <p class="note" id="zoneNote"></p>
+</div>
+
+<section class="view" id="viewSpots">
+  <h1 data-i18n="spots.title">Spots &amp; agenda</h1>
+  <p class="sub" data-i18n="spots.sub">Wie is er nu actief, en wie kondigt iets aan?</p>
+  <div class="segs" id="spotTab">
+    <button class="seg on" data-tab="spots" data-i18n="spots.tabnow">Nu actief</button>
+    <button class="seg" data-tab="agenda" data-i18n="spots.tabagenda">Agenda</button>
+  </div>
+  <div class="segs" id="spotFilter" style="margin-bottom:12px">
+    <button class="seg on" data-filter="onff">ONFF</button>
+    <button class="seg" data-filter="all" data-i18n="spots.world">Wereldwijd</button>
+  </div>
+  <div class="card"><div class="spotlist" id="spotList"><p class="hint" data-i18n="spots.loading">laden…</p></div></div>
+  <p class="hint" id="spotMeta"></p>
+</section>
+
+<section class="view" id="viewSession">
+  <h1 data-i18n="sess.title">Activatiesessie</h1>
+  <p class="sub" id="sessRef" data-i18n="sess.sub">Nog geen gebied gekozen</p>
+  <div class="banner out" id="sessBanner">
+    <span class="dot" style="width:11px;height:11px;border-radius:50%;background:currentColor"></span>
+    <span><div class="b1" id="sessB1" data-i18n="sess.unknown">Positie onbekend</div>
+          <div class="b2" id="sessB2" data-i18n="sess.press">Druk op start; Diana volgt je positie.</div></span>
+  </div>
+  <div class="card">
+    <div class="srow"><span class="rec" id="sessRec" hidden><span class="d"></span><span data-i18n="sess.rec">Opname actief</span></span>
+      <span class="r" id="sessPts">—</span></div>
+    <div class="clock" id="sessClock">00:00:00</div>
+    <div class="r" id="sessPct" data-i18n="sess.notstarted">Nog niet gestart</div>
+  </div>
+  <button class="btn" id="sessStart" data-i18n="sess.start">Start activatie</button>
+  <button class="btn amber" id="sessStop" hidden data-i18n="sess.stop">Stop &amp; genereer bewijs</button>
+  <button class="btn ghost" id="sessGpx" hidden data-i18n="sess.gpx">Download GPX + samenvatting</button>
+  <p class="privacy">🔒 <span data-i18n="sess.privacy">Je track blijft op dit toestel. Er gaat niets naar een server tot je zelf exporteert.</span></p>
+</section>
+
+<section class="view" id="viewHeat">
+  <h1 data-i18n="heat.title">Activatie-heatmap</h1>
+  <p class="sub" data-i18n="heat.sub">Welke gebieden hebben aandacht nodig?</p>
+  <div class="card" id="heatBox"><p class="hint" data-i18n="heat.loading">Statusdata laden…</p></div>
+  <div class="card" id="heatNeg" hidden>
+    <h4 style="margin:0 0 8px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
+        data-i18n="heat.neglected">Meest verwaarloosde gebieden</h4>
+    <div id="negList"></div>
+  </div>
+</section>
+
+<section class="view" id="viewRules">
+  <h1 data-i18n="rules.title">Regels &amp; bandplan</h1>
+  <p class="sub" data-i18n="rules.sub">WWFF wereldwijd en wat ONFF daaraan toevoegt</p>
+  <div class="card"><table class="rules"><tbody id="rulesBody"></tbody></table></div>
+  <div id="bandBox"></div>
+  <p class="hint" data-i18n="rules.src">Bron: WWFF Global Rules §14.7 en de ONFF-regels op onffbelgium.blogspot.com</p>
+</section>
+
+<nav class="nav" id="nav">
+  <button class="on" data-view="map"><span class="ic">◈</span><span data-i18n="nav.map">Kaart</span></button>
+  <button data-view="viewSpots"><span class="ic">((·))</span><span data-i18n="nav.spots">Spots</span></button>
+  <button data-view="viewSession"><span class="ic">◉</span><span data-i18n="nav.session">Sessie</span></button>
+  <button data-view="viewHeat"><span class="ic">▦</span><span data-i18n="nav.heat">Heatmap</span></button>
+  <button data-view="viewRules"><span class="ic">☰</span><span data-i18n="nav.rules">Regels</span></button>
+</nav>
+
+<div class="status" id="status">
+  <span class="dot"></span>
+  <span class="txt"><div class="t1" id="stT1"></div><div class="t2" id="stT2"></div></span>
+</div>
+
+<script src="vendor/maplibre-gl.js"></script>
+<script>
+/* ------------------------------------------------------------------ *
+ * Diana — kaartlaag. Stap 2 + 3 van het technisch plan.
+ * Alles client-side: geen server, geen API-key, geen tracking.
+ * ------------------------------------------------------------------ */
+
+const STYLE_URL = s => `https://tiles.openfreemap.org/styles/${s}`;
+const $ = id => document.getElementById(id);
+
+/* ================================================================== *
+ * Talen — NL / FR / EN. Gebiedsnamen blijven onvertaald: die zijn
+ * officieel en horen zo in het log.
+ * ================================================================== */
+const STR = {
+ nl:{
+  'nav.spots':'Spots',
+  'spots.title':'Spots & agenda',
+  'spots.sub':'Wie is er nu actief, en wie kondigt iets aan?',
+  'spots.tabnow':'Nu actief',
+  'spots.tabagenda':'Agenda',
+  'spots.world':'Wereldwijd',
+  'spots.loading':'laden…',
+  'spots.now':'bezig',
+  'spots.until':'tot',
+  'spots.noagenda':'Niets aangekondigd in deze selectie.',
+  'spots.announced':'aankondigingen',
+  'spots.updated':'bijgewerkt om',
+  'nav.map':'Kaart','nav.session':'Sessie','nav.heat':'Heatmap','nav.rules':'Regels',
+  'sess.title':'Activatiesessie','sess.sub':'Kies eerst een gebied op de kaart',
+  'sess.unknown':'Positie onbekend','sess.press':'Druk op start; Diana volgt je positie.',
+  'sess.inside':'Binnen het gebied','sess.outside':'Buiten het gebied',
+  'sess.pos':'Je positie valt binnen','sess.outsidesub':'Je positie valt buiten de referentiegrens.',
+  'sess.rec':'Opname actief','sess.notstarted':'Nog niet gestart','sess.points':'punten gelogd',
+  'sess.started':'Gestart om','sess.oftime':'van de tijd binnen het gebied',
+  'sess.need60':'60 min nog niet gehaald','sess.minleft':'min te gaan','sess.ok60':'60 min gehaald',
+  'sess.start':'Start activatie','sess.restart':'Nieuwe activatie','sess.stop':'Stop & genereer bewijs',
+  'sess.gpx':'Download GPX + samenvatting','sess.nopoints':'Er zijn geen meetpunten gelogd.',
+  'sess.pickfirst':'Kies eerst een gebied op de kaart.',
+  'sess.privacy':'Je track blijft op dit toestel. Er gaat niets naar een server tot je zelf exporteert.',
+  'rules.title':'Regels & bandplan','rules.sub':'WWFF wereldwijd en wat ONFF daaraan toevoegt',
+  'rules.qso':'Minimum QSO’s','rules.dur':'Minimumduur','rules.bound':'Grens','rules.call':'Roepnaam',
+  'rules.proof':'Bewijs','rules.log':'Log indienen','rules.pref':'WWFF-voorkeur',
+  'rules.yourband':'jouw huidige band',
+  'rules.src':'Bron: WWFF Global Rules §14.7 en de ONFF-regels op onffbelgium.blogspot.com',
+  'heat.title':'Activatie-heatmap','heat.sub':'Welke gebieden hebben aandacht nodig?',
+  'heat.loading':'Statusdata laden…','heat.activated':'gebieden ooit geactiveerd',
+  'heat.never':'nog nooit','heat.long':'Nooit / lang geleden','heat.recent':'Recent actief',
+  'heat.neglected':'Meest verwaarloosde gebieden','heat.neveryet':'nooit geactiveerd','heat.yearsago':'jaar geleden',
+  'heat.cors':'De statussheet laat geen rechtstreekse verbinding toe (CORS). Hiervoor is de Worker uit het plan nodig.',
+  'rules.w.qso':'44 (club 200)',
+'rules.w.dur':'—',
+'rules.w.bound':'alle apparatuur binnen de grens',
+'rules.w.call':'—',
+'rules.w.proof':'—',
+'rules.w.log':'—',
+'rules.o.qso':'44, behalve QRP',
+'rules.o.dur':'60 min vanaf de eerste QSO',
+'rules.o.bound':'idem',
+'rules.o.call':'/p of /m voor de jaarranking',
+'rules.o.proof':'2 foto’s (max 600 px) of 1 geotagde foto',
+'rules.o.log':'ADIF naar onfflogapproval@gmail.com',
+  'heat.fail':'Statusdata ophalen mislukt:'
+ },
+ fr:{
+  'nav.spots':'Spots',
+  'spots.title':'Spots & agenda',
+  'spots.sub':'Qui est actif maintenant, qui annonce quoi ?',
+  'spots.tabnow':'En cours',
+  'spots.tabagenda':'Agenda',
+  'spots.world':'Mondial',
+  'spots.loading':'chargement…',
+  'spots.now':'en cours',
+  'spots.until':'jusqu’à',
+  'spots.noagenda':'Rien d’annoncé dans cette sélection.',
+  'spots.announced':'annonces',
+  'spots.updated':'mis à jour à',
+  'nav.map':'Carte','nav.session':'Session','nav.heat':'Carte d’activité','nav.rules':'Règles',
+  'sess.title':'Session d’activation','sess.sub':'Choisissez d’abord une zone sur la carte',
+  'sess.unknown':'Position inconnue','sess.press':'Appuyez sur démarrer ; Diana suit votre position.',
+  'sess.inside':'Dans la zone','sess.outside':'Hors de la zone',
+  'sess.pos':'Votre position est dans','sess.outsidesub':'Votre position est hors des limites de la référence.',
+  'sess.rec':'Enregistrement','sess.notstarted':'Pas encore démarré','sess.points':'points enregistrés',
+  'sess.started':'Démarré à','sess.oftime':'du temps dans la zone',
+  'sess.need60':'60 min pas encore atteintes','sess.minleft':'min restantes','sess.ok60':'60 min atteintes',
+  'sess.start':'Démarrer l’activation','sess.restart':'Nouvelle activation','sess.stop':'Arrêter & générer la preuve',
+  'sess.gpx':'Télécharger GPX + résumé','sess.nopoints':'Aucun point enregistré.',
+  'sess.pickfirst':'Choisissez d’abord une zone sur la carte.',
+  'sess.privacy':'Votre trace reste sur cet appareil. Rien n’est envoyé tant que vous n’exportez pas.',
+  'rules.title':'Règles & plan de bande','rules.sub':'WWFF mondial et ce qu’ONFF y ajoute',
+  'rules.qso':'QSO minimum','rules.dur':'Durée minimale','rules.bound':'Limites','rules.call':'Indicatif',
+  'rules.proof':'Preuve','rules.log':'Envoi du log','rules.pref':'Fréquence WWFF',
+  'rules.yourband':'votre bande actuelle',
+  'rules.src':'Source : WWFF Global Rules §14.7 et les règles ONFF sur onffbelgium.blogspot.com',
+  'heat.title':'Carte d’activité','heat.sub':'Quelles zones méritent de l’attention ?',
+  'heat.loading':'Chargement des données…','heat.activated':'zones déjà activées',
+  'heat.never':'jamais','heat.long':'Jamais / il y a longtemps','heat.recent':'Actif récemment',
+  'heat.neglected':'Zones les plus délaissées','heat.neveryet':'jamais activée','heat.yearsago':'ans',
+  'heat.cors':'La feuille de statut n’autorise pas la connexion directe (CORS). Le Worker du plan est nécessaire.',
+  'rules.w.qso':'44 (club 200)',
+'rules.w.dur':'—',
+'rules.w.bound':'tout l’équipement dans les limites',
+'rules.w.call':'—',
+'rules.w.proof':'—',
+'rules.w.log':'—',
+'rules.o.qso':'44, sauf en QRP',
+'rules.o.dur':'60 min à partir du premier QSO',
+'rules.o.bound':'idem',
+'rules.o.call':'/p ou /m pour le classement annuel',
+'rules.o.proof':'2 photos (max 600 px) ou 1 photo géolocalisée',
+'rules.o.log':'ADIF vers onfflogapproval@gmail.com',
+  'heat.fail':'Échec du chargement :'
+ },
+ en:{
+  'nav.spots':'Spots',
+  'spots.title':'Spots & agenda',
+  'spots.sub':'Who is on air now, and who announced what?',
+  'spots.tabnow':'On air',
+  'spots.tabagenda':'Agenda',
+  'spots.world':'Worldwide',
+  'spots.loading':'loading…',
+  'spots.now':'live',
+  'spots.until':'until',
+  'spots.noagenda':'Nothing announced in this selection.',
+  'spots.announced':'announcements',
+  'spots.updated':'updated at',
+  'nav.map':'Map','nav.session':'Session','nav.heat':'Heatmap','nav.rules':'Rules',
+  'sess.title':'Activation session','sess.sub':'Pick a reference on the map first',
+  'sess.unknown':'Position unknown','sess.press':'Press start; Diana follows your position.',
+  'sess.inside':'Inside the reference','sess.outside':'Outside the reference',
+  'sess.pos':'Your position falls inside','sess.outsidesub':'Your position is outside the reference boundary.',
+  'sess.rec':'Recording','sess.notstarted':'Not started','sess.points':'points logged',
+  'sess.started':'Started at','sess.oftime':'of the time inside the reference',
+  'sess.need60':'60 min not reached yet','sess.minleft':'min to go','sess.ok60':'60 min reached',
+  'sess.start':'Start activation','sess.restart':'New activation','sess.stop':'Stop & generate proof',
+  'sess.gpx':'Download GPX + summary','sess.nopoints':'No track points were logged.',
+  'sess.pickfirst':'Pick a reference on the map first.',
+  'sess.privacy':'Your track stays on this device. Nothing is sent anywhere until you export it.',
+  'rules.title':'Rules & band plan','rules.sub':'WWFF worldwide and what ONFF adds',
+  'rules.qso':'Minimum QSOs','rules.dur':'Minimum duration','rules.bound':'Boundary','rules.call':'Callsign',
+  'rules.proof':'Proof','rules.log':'Log submission','rules.pref':'WWFF preferred',
+  'rules.yourband':'your current band',
+  'rules.src':'Source: WWFF Global Rules §14.7 and the ONFF rules on onffbelgium.blogspot.com',
+  'heat.title':'Activation heatmap','heat.sub':'Which references need attention?',
+  'heat.loading':'Loading status data…','heat.activated':'references ever activated',
+  'heat.never':'never yet','heat.long':'Never / long ago','heat.recent':'Recently active',
+  'heat.neglected':'Most neglected references','heat.neveryet':'never activated','heat.yearsago':'years ago',
+  'heat.cors':'The status sheet does not allow a direct connection (CORS). The Worker from the plan is needed.',
+  'rules.w.qso':'44 (club 200)',
+'rules.w.dur':'—',
+'rules.w.bound':'all equipment inside the boundary',
+'rules.w.call':'—',
+'rules.w.proof':'—',
+'rules.w.log':'—',
+'rules.o.qso':'44, except QRP',
+'rules.o.dur':'60 min from the first QSO',
+'rules.o.bound':'same',
+'rules.o.call':'/p or /m for the yearly ranking',
+'rules.o.proof':'2 photos (max 600 px) or 1 geotagged photo',
+'rules.o.log':'ADIF to onfflogapproval@gmail.com',
+  'heat.fail':'Could not load status data:'
+ }
+};
+let lang = (new URLSearchParams(location.search).get('lang')
+         || (navigator.language||'nl').slice(0,2).toLowerCase());
+if(!STR[lang]) lang = 'nl';
+const t = k => (STR[lang] && STR[lang][k]) || STR.nl[k] || k;
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+}
+
+
+let zones = null;          // FeatureCollection
+let index = null;          // lichte index
+let currentStyle = 'liberty';
+let showLabels = true;
+let showZones = true;
+let selected = null;
+let watchId = null;
+
+/* ---------- data laden ---------- */
+async function loadData(){
+  if (window.DIANA_ZONES){            // ingebakken in de losse previewversie
+    zones = window.DIANA_ZONES;
+  } else {
+    zones = await (await fetch('../data/onff.geojson')).json();
+  }
+  index = zones.features.map(f => {
+    const b = bboxOf(f.geometry);
+    return {...f.properties, bbox:b};
+  });
+  $('counts').innerHTML = `<b>${zones.features.length}</b> ONFF-gebieden`;
+}
+
+/* Eén labelpunt per referentie, op het grootste deelgebied — daar waar je in het
+   veld het meest waarschijnlijk staat. */
+function labelFeatures(){
+  return {type:'FeatureCollection', features: zones.features.map(f=>{
+    let best=null, bestArea=-1;
+    for(const poly of f.geometry.coordinates){
+      let x1=180,y1=90,x2=-180,y2=-90;
+      for(const [x,y] of poly[0]){ if(x<x1)x1=x; if(x>x2)x2=x; if(y<y1)y1=y; if(y>y2)y2=y; }
+      const a=(x2-x1)*(y2-y1);
+      if(a>bestArea){ bestArea=a; best=[(x1+x2)/2,(y1+y2)/2]; }
+    }
+    return {type:'Feature',
+      properties:{ref:f.properties.ref, name:f.properties.name, parts:f.geometry.coordinates.length},
+      geometry:{type:'Point', coordinates:best}};
+  })};
+}
+
+function bboxOf(geom){
+  let x1=180,y1=90,x2=-180,y2=-90;
+  for (const poly of geom.coordinates)
+    for (const ring of poly)
+      for (const [x,y] of ring){
+        if(x<x1)x1=x; if(x>x2)x2=x; if(y<y1)y1=y; if(y>y2)y2=y;
+      }
+  return [x1,y1,x2,y2];
+}
+
+/* ---------- kaart ---------- */
+const map = new maplibregl.Map({
+  container:'map',
+  style: STYLE_URL(currentStyle),
+  center:[4.47,50.85], zoom:7.2,
+  attributionControl:{compact:true}
+});
+map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
+
+function paintZones(){
+  if (!zones || !map.isStyleLoaded()) return;
+  if (map.getSource('onff')) return;
+  
+  // generateId geeft elk feature een oplopend id, in dezelfde volgorde als de array —
+  // dat is wat feature-state (de selectie-highlight) nodig heeft.
+  map.addSource('onff',{type:'geojson',data:zones,generateId:true});
+
+  map.addLayer({
+    id:'onff-fill', type:'fill', source:'onff',
+    paint:{
+      'fill-color':'#2d6a4f',
+      // 'zoom' mag alleen bovenaan een interpolate staan, dus de selectie zit erbinnen.
+      'fill-opacity':['interpolate',['linear'],['zoom'],
+        7,  ['case',['boolean',['feature-state','sel'],false],0.42,0.20],
+        12, ['case',['boolean',['feature-state','sel'],false],0.45,0.28]]
+    }
+  });
+  map.addLayer({
+    id:'onff-line', type:'line', source:'onff',
+    paint:{
+      'line-color':['case',['boolean',['feature-state','sel'],false],'#d97706','#1b4332'],
+      'line-width':['interpolate',['linear'],['zoom'],
+        7,  ['case',['boolean',['feature-state','sel'],false],2.4,0.5],
+        12, ['case',['boolean',['feature-state','sel'],false],3.2,1.6]],
+      'line-opacity':0.9
+    }
+  });
+  // Labels komen uit een aparte puntenbron: één punt per referentie. Zetten we ze
+  // op de vlakkenlaag, dan tekent MapLibre een label per polygoondeel — en een
+  // gebied als ONFF-0329 bestaat uit 67 losse percelen.
+  map.addSource('onff-pts',{type:'geojson',data:labelFeatures()});
+  if (map.getStyle().glyphs) map.addLayer({
+    id:'onff-label', type:'symbol', source:'onff-pts',
+    layout:{
+      'text-field':['get','ref'],
+      'text-font':['Noto Sans Regular'],
+      'text-size':11, 'text-allow-overlap':false, 'text-padding':6,
+      'visibility': showLabels ? 'visible' : 'none'
+    },
+    paint:{'text-color':'#1b4332','text-halo-color':'#f6f4ee','text-halo-width':1.6}
+  });
+
+  map.on('click','onff-fill', e => {
+    // Zones kunnen overlappen — toon wat er onder de vinger ligt, niet alleen de bovenste.
+    const hits = map.queryRenderedFeatures(e.point,{layers:['onff-fill']});
+    select(hits[0].properties.ref, hits.map(h=>h.properties.ref));
+  });
+  map.on('mouseenter','onff-fill',()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','onff-fill',()=>map.getCanvas().style.cursor='');
+}
+
+/* De data staat los van de kaart. Valt de achtergrondkaart weg — geen netwerk,
+   nog niets in de cache — dan blijven zoeken, sessie, regels en heatmap gewoon
+   werken. Alleen de tegels ontbreken dan. */
+const dataReady = loadData().then(()=>{
+  applyLang();
+  [...$('langPick').children].forEach(b=>b.classList.toggle('on', b.dataset.lang===lang));
+  if(map.isStyleLoaded()) paintZones();
+  try{ applyEmbed(); }catch(err){ console.error('embed-parameters:', err); }
+}).catch(err=>{
+  $('counts').textContent = 'Gebiedsdata kon niet geladen worden';
+  console.error('data:', err);
+});
+
+map.on('load', () => dataReady.then(()=>paintZones()));
+map.on('error', e => {
+  // Een ontbrekende achtergrondkaart mag de rest van de app niet meeslepen.
+  if(String(e.error||'').match(/style|tile|glyph/i)) return;
+  console.warn('kaart:', e.error);
+});
+
+$('langPick').addEventListener('click', e=>{
+  const b=e.target.closest('.seg[data-lang]'); if(!b) return;
+  lang = b.dataset.lang;
+  [...$('langPick').children].forEach(c=>c.classList.toggle('on',c===b));
+  applyLang(); renderRules(); renderSession(); if(heatLoaded) paintHeat();
+});
+
+/* ---------- embed-modus: ?embed=1&prov=…&ref=…&lang=…&spots=1 ---------- */
+function applyEmbed(){
+  const q = new URLSearchParams(location.search);
+  if(q.get('spots')==='1'){ showSpots=true; startSpots();
+    const o=document.querySelector('[data-layer="spots"]'); if(o){o.classList.add('on');o.querySelector('.sw').classList.add('on');} }
+  if(q.get('ref')) select(q.get('ref').toUpperCase());
+  if(q.get('prov')){
+    const p=q.get('prov').toLowerCase();
+    const sel = index.filter(z=>(z.prov||'').toLowerCase().includes(p));
+    if(sel.length){
+      const b=[Math.min(...sel.map(z=>z.bbox[0])),Math.min(...sel.map(z=>z.bbox[1])),
+               Math.max(...sel.map(z=>z.bbox[2])),Math.max(...sel.map(z=>z.bbox[3]))];
+      map.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:30});
+    }
+  }
+  if(q.get('embed')==='1'){
+    document.body.classList.add('embed');
+    document.body.classList.remove('has-nav');
+  }
+}
+
+/* Bij een stijlwissel gaan alle eigen lagen weg — opnieuw tekenen. */
+function setStyle(name){
+  currentStyle = name;
+  map.setStyle(STYLE_URL(name));
+  map.once('styledata', () => { paintZones(); if(showSpots) paintSpots(); applyVisibility(); reselect(); });
+}
+
+function applyVisibility(){
+  if(!map.getLayer('onff-fill')) return;
+  const v = showZones ? 'visible':'none';
+  ['onff-fill','onff-line'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  if(map.getLayer('onff-label'))
+    map.setLayoutProperty('onff-label','visibility',(showZones&&showLabels)?'visible':'none');
+  const sv = showSpots ? 'visible' : 'none';
+  ['spots-dot','spots-call'].forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',sv); });
+}
+
+/* ---------- selectie & detailpaneel ---------- */
+function featureIdOf(ref){ return zones.features.findIndex(f=>f.properties.ref===ref); }
+
+function reselect(){ if(selected) markSelected(selected); }
+
+function markSelected(ref){
+  const id = featureIdOf(ref);
+  if(id<0) return;
+  if(map._lastSel!=null) map.setFeatureState({source:'onff',id:map._lastSel},{sel:false});
+  map.setFeatureState({source:'onff',id},{sel:true});
+  map._lastSel = id;
+}
+
+const FIELDS = [
+  ['area_ha','Oppervlakte', v=>`${v.toLocaleString('nl-BE')} ha`],
+  ['manager','Beheerder',   v=>v],
+  ['desig',  'Aanduiding',  v=>v],
+  ['iucn',   'IUCN-categorie', v=>v],
+  ['registration','Registratienummer', v=>v],
+  ['status_year','Aangeduid sinds', v=>v],
+];
+
+function select(ref, alsoIn){
+  const f = zones.features.find(x=>x.properties.ref===ref);
+  if(!f) return;
+  selected = ref;
+  const p = f.properties;
+
+  $('badges').innerHTML =
+    `<span class="pill">${p.ref}</span>` +
+    (p.prov ? `<span class="pill grey">${p.prov}</span>` : '') +
+    (p.layer ? `<span class="pill grey">${p.layer}</span>` : '');
+  $('zoneName').textContent = p.name;
+
+  // Alleen tonen wat er is. Bij bijna de helft van de gebieden is dat weinig —
+  // lege vakjes met streepjes zijn erger dan geen vakje.
+  const nParts = f.geometry.coordinates.length;
+  $('facts').innerHTML = FIELDS
+    .filter(([k])=>p[k]!==undefined && p[k]!==null && p[k]!=='')
+    .map(([k,label,fmt])=>`<div class="fact"><div class="k">${label}</div><div class="v">${fmt(p[k])}</div></div>`)
+    .join('')
+    + (nParts>1 ? `<div class="fact"><div class="k">Percelen</div><div class="v">${nParts}</div></div>` : '');
+
+  const parts = f.geometry.coordinates.length;
+  const notes = [];
+  if(parts > 1)
+    notes.push(`Bestaat uit ${parts} losse percelen. Je moet met je volledige station binnen één ervan staan.`);
+  const overlap = (alsoIn||[]).filter(r=>r!==ref);
+  if(overlap.length)
+    notes.push(`Dit punt ligt ook in ${overlap.join(', ')} — je staat dan in meerdere referenties tegelijk.`);
+  $('zoneNote').textContent = notes.join(' ');
+
+  markSelected(ref);
+  openSheet();
+
+  const b = bboxOf(f.geometry);
+  map.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:{top:90,bottom:260,left:40,right:40},maxZoom:14});
+}
+
+function openSheet(){
+  const el = $('sheet');
+  el.classList.add('open');
+  // De hoogte varieert met het aantal feiten, dus meten na het renderen.
+  requestAnimationFrame(()=>document.body.style.setProperty('--sheet-h', el.offsetHeight+'px'));
+  document.body.classList.add('sheet-open');
+}
+function closeSheet(){
+  $('sheet').classList.remove('open');
+  document.body.classList.remove('sheet-open');
+}
+$('closeSheet').onclick = closeSheet;
+map.on('click', e => {                       // klik naast een gebied sluit het paneel
+  if(!map.queryRenderedFeatures(e.point,{layers:map.getLayer('onff-fill')?['onff-fill']:[]}).length) closeSheet();
+});
+
+/* ---------- zoeken ---------- */
+function search(term){
+  const t = term.trim().toLowerCase();
+  if(t.length<2) return [];
+  const digits = t.replace(/\D/g,'');
+  return index.filter(z =>
+      z.name.toLowerCase().includes(t) ||
+      z.ref.toLowerCase().includes(t) ||
+      (digits && z.ref.includes(digits.padStart(4,'0')))
+    ).slice(0,40);
+}
+$('q').addEventListener('input', e => {
+  const rows = search(e.target.value);
+  $('results').innerHTML = rows.map(z =>
+    `<div class="res" data-ref="${z.ref}"><span class="r">${z.ref.replace('ONFF-','')}</span>
+     <span class="n">${z.name}</span><span class="p">${z.prov||''}</span></div>`).join('')
+    || (e.target.value.trim().length>1 ? '<div class="res"><span class="n">Niets gevonden</span></div>' : '');
+});
+$('results').addEventListener('click', e => {
+  const row = e.target.closest('.res[data-ref]');
+  if(row){ select(row.dataset.ref); toggle('search',false); }
+});
+
+/* ---------- panelen ---------- */
+function toggle(what, force){
+  const map_ = {search:['search','btnSearch'], style:['popStyle','btnStyle'],
+                layers:['popLayers','btnLayers']};
+  for(const [k,[el,btn]] of Object.entries(map_)){
+    const open = k===what ? (force!==undefined?force:!$(el).classList.contains('open')) : false;
+    $(el).classList.toggle('open',open);
+    $(btn).setAttribute('aria-expanded',open);
+  }
+  const searching = $('search').classList.contains('open');
+  document.body.classList.toggle('searching', searching);
+  if(searching) $('q').focus();
+}
+$('btnSearch').onclick = ()=>toggle('search');
+$('btnStyle').onclick  = ()=>toggle('style');
+$('btnLayers').onclick = ()=>toggle('layers');
+$('btnOffline').onclick = prefetchArea;
+
+$('popStyle').addEventListener('click', e => {
+  const opt = e.target.closest('.opt'); if(!opt) return;
+  [...$('popStyle').children].forEach(c=>c.classList?.remove('on'));
+  opt.classList.add('on');
+  setStyle(opt.dataset.style);
+});
+$('popLayers').addEventListener('click', e => {
+  const opt = e.target.closest('.opt[data-layer]'); if(!opt) return;
+  if(opt.dataset.layer==='onff') showZones = !showZones;
+  if(opt.dataset.layer==='labels') showLabels = !showLabels;
+  if(opt.dataset.layer==='spots'){ showSpots = !showSpots; if(showSpots) startSpots(); }
+  opt.classList.toggle('on');
+  opt.querySelector('.sw').classList.toggle('on');
+  applyVisibility();
+});
+
+
+/* ------------------------------------------------------------------ *
+ * Spots — WWFF Spotline. Stap 4 van het plan.
+ * De statische JSON-bestanden van Spotline, elke 30 s ververst zoals zij
+ * zelf aanbevelen, gepauzeerd zodra het tabblad niet zichtbaar is.
+ * ------------------------------------------------------------------ */
+const SPOTS_URL  = 'https://spots.wwff.co/static/spots.json';
+const AGENDA_URL = 'https://spots.wwff.co/static/agendas_active.json';
+const REFRESH_MS = 30000;
+
+let spots = [], agenda = [], spotsAt = null, spotsError = null;
+let showSpots = false, spotFilter = 'onff', spotTab = 'spots', spotTimer = null, here = null;
+
+function startSpots(){
+  if(spotTimer) return;
+  fetchSpots();
+  spotTimer = setInterval(()=>{ if(!document.hidden) fetchSpots(); }, REFRESH_MS);
+}
+async function fetchSpots(){
+  try{
+    const [s,a] = await Promise.all([
+      fetch(SPOTS_URL,{cache:'no-store'}).then(r=>r.json()),
+      fetch(AGENDA_URL,{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
+    ]);
+    spots = Array.isArray(s) ? s : [];
+    agenda = Array.isArray(a) ? a : [];
+    spotsAt = new Date(); spotsError = null;
+  }catch(err){
+    // Een TypeError zonder statuscode betekent bijna altijd: door CORS geblokkeerd.
+    spotsError = (err instanceof TypeError)
+      ? 'Spotline weigert de rechtstreekse verbinding (CORS). Hiervoor is de proxy uit het plan nodig.'
+      : ('Spots ophalen mislukt: ' + err.message);
+  }
+  paintSpots(); renderSpots();
+}
+
+const isONFF = r => typeof r === 'string' && r.toUpperCase().startsWith('ONFF');
+const visibleSpots = () => spots
+  .filter(s => s.latitude && s.longitude)
+  .filter(s => spotFilter === 'all' || isONFF(s.reference))
+  .filter(s => ageMin(s) < 60);
+
+function ageMin(s){ return (Date.now()/1000 - (s.spot_time||0)) / 60; }
+function agoText(s){
+  const m = Math.max(0, Math.round(ageMin(s)));
+  return m < 1 ? 'zopas gespot' : `${m} min geleden gespot`;
+}
+
+function paintSpots(){
+  const fc = {type:'FeatureCollection', features: visibleSpots().map(s=>({
+    type:'Feature',
+    properties:{ id:s.id, call:s.activator, ref:s.reference, khz:s.frequency_khz,
+                 mode:s.mode, stale: ageMin(s) > 30 },
+    geometry:{type:'Point',coordinates:[s.longitude,s.latitude]}
+  }))};
+  if(map.getSource('spots')) { map.getSource('spots').setData(fc); applyVisibility(); return; }
+  if(!map.isStyleLoaded()) return;
+  map.addSource('spots',{type:'geojson',data:fc});
+  map.addLayer({
+    id:'spots-dot', type:'circle', source:'spots',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['zoom'],5,5,12,9],
+      'circle-color':['case',['get','stale'],'#c9c3b4','#d97706'],
+      'circle-stroke-color':'#fff','circle-stroke-width':2
+    }
+  });
+  if(map.getStyle().glyphs) map.addLayer({
+    id:'spots-call', type:'symbol', source:'spots',
+    layout:{'text-field':['get','call'],'text-font':['Noto Sans Regular'],'text-size':11,
+            'text-offset':[0,1.3],'text-anchor':'top','text-allow-overlap':false},
+    paint:{'text-color':'#92400e','text-halo-color':'#fff','text-halo-width':1.8}
+  });
+  map.on('click','spots-dot', e => openSpot(e.features[0].properties.id));
+  map.on('mouseenter','spots-dot',()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','spots-dot',()=>map.getCanvas().style.cursor='');
+  applyVisibility();
+}
+
+/* ---------- richting, afstand, locator ---------- */
+function bearing(lat1,lon1,lat2,lon2){
+  const t=Math.PI/180, y=Math.sin((lon2-lon1)*t)*Math.cos(lat2*t);
+  const x=Math.cos(lat1*t)*Math.sin(lat2*t)-Math.sin(lat1*t)*Math.cos(lat2*t)*Math.cos((lon2-lon1)*t);
+  return (Math.atan2(y,x)/t+360)%360;
+}
+const COMPASS = ['N','NNO','NO','ONO','O','OZO','ZO','ZZO','Z','ZZW','ZW','WZW','W','WNW','NW','NNW'];
+const compassName = d => COMPASS[Math.round(d/22.5)%16];
+
+function locator(lat,lon){
+  const A='A'.charCodeAt(0);
+  let x=lon+180, y=lat+90;
+  const f1=String.fromCharCode(A+Math.floor(x/20)), f2=String.fromCharCode(A+Math.floor(y/10));
+  const s1=Math.floor((x%20)/2), s2=Math.floor(y%10);
+  const t1=String.fromCharCode(A+Math.floor(((x%2)*60)/5)), t2=String.fromCharCode(A+Math.floor(((y%1)*60)/2.5));
+  return `${f1}${f2}${s1}${s2}${t1.toLowerCase()}${t2.toLowerCase()}`.toUpperCase();
+}
+const fmtKm = m => m>=1000 ? `${(m/1000).toFixed(m<10000?1:0)} km` : `${Math.round(m)} m`;
+
+/* ---------- lijst ---------- */
+function renderSpots(){
+  const list=$('spotList'), meta=$('spotMeta');
+  if(spotTab==='agenda') return renderAgenda(list, meta);
+  if(spotsError){
+    list.innerHTML = `<p class="hint" style="color:#b45309">${spotsError}</p>`;
+    meta.textContent = spotsAt ? `Laatst gelukt om ${spotsAt.toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'})}` : '';
+    return;
+  }
+  const rows = visibleSpots().sort((a,b)=>{
+    if(here) return dist(a)-dist(b);
+    return (b.spot_time||0)-(a.spot_time||0);
+  });
+  list.innerHTML = rows.length ? rows.map(s=>{
+    const d = here ? `<b>${Math.round(bearing(here.lat,here.lon,s.latitude,s.longitude))}°</b>${fmtKm(dist(s))}`
+                   : `<b>${Math.max(0,Math.round(ageMin(s)))}′</b>${s.mode||''}`;
+    return `<div class="spot${ageMin(s)>30?' stale':''}" data-id="${s.id}">
+      <span class="sig">((·))</span>
+      <span class="who"><div class="c">${s.activator||'?'}</div>
+        <div class="f">${s.frequency_khz||'?'} kHz · ${s.mode||'?'} · ${s.reference||''}</div></span>
+      <span class="d">${d}</span></div>`;
+  }).join('') : '<p class="hint">Geen actieve spots in deze selectie.</p>';
+  meta.textContent = spotsAt
+    ? `${rows.length} spots · ${t('spots.updated')} ${spotsAt.toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'})}`
+    : t('spots.loading');
+}
+function dist(s){ return here ? haversine(here.lat,here.lon,s.latitude,s.longitude) : Infinity; }
+
+/* Aangekondigde activaties. Spotline levert utc_start/utc_end als tekst; we tonen
+   wat er loopt en wat er nog komt, met "nu bezig" apart gemarkeerd. */
+function renderAgenda(list, meta){
+  if(spotsError){
+    list.innerHTML = `<p class="hint" style="color:#b45309">${spotsError}</p>`;
+    meta.textContent=''; return;
+  }
+  const rows = agenda
+    .filter(a => spotFilter==='all' || isONFF(a.reference))
+    .sort((a,b)=>String(a.utc_start).localeCompare(String(b.utc_start)));
+  const nowUTC = new Date().toISOString().slice(0,19).replace('T',' ');
+  list.innerHTML = rows.length ? rows.map(a=>{
+    const running = a.utc_start <= nowUTC && nowUTC <= a.utc_end;
+    return `<div class="spot${running?'':' stale'}">
+      <span class="sig" style="${running?'':'background:var(--paper);color:var(--ink-3)'}">${running?'●':'○'}</span>
+      <span class="who"><div class="c">${a.activator_call||'?'}</div>
+        <div class="f">${a.reference||''} · ${a.band||'?'} · ${a.mode||'?'}</div></span>
+      <span class="d"><b>${running?t('spots.now'):(a.utc_start||'').slice(5,10)}</b>${
+        running ? t('spots.until')+' '+(a.utc_end||'').slice(11,16) : (a.utc_start||'').slice(11,16)+' UTC'}</span>
+    </div>`;
+  }).join('') : `<p class="hint">${t('spots.noagenda')}</p>`;
+  meta.textContent = spotsAt
+    ? `${rows.length} ${t('spots.announced')} · ${t('spots.updated')} ${spotsAt.toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'})}`
+    : '';
+}
+
+
+$('spotList').addEventListener('click', e=>{
+  const row=e.target.closest('.spot[data-id]'); if(row) openSpot(Number(row.dataset.id));
+});
+$('spotTab').addEventListener('click', e=>{
+  const b=e.target.closest('.seg[data-tab]'); if(!b) return;
+  spotTab=b.dataset.tab;
+  [...$('spotTab').children].forEach(c=>c.classList.toggle('on',c===b));
+  renderSpots();
+});
+$('spotFilter').addEventListener('click', e=>{
+  const b=e.target.closest('.seg'); if(!b) return;
+  spotFilter=b.dataset.filter;
+  [...$('spotFilter').children].forEach(c=>c.classList.toggle('on',c===b));
+  paintSpots(); renderSpots();
+});
+
+/* ---------- spotdetail ---------- */
+function openSpot(id){
+  const s = spots.find(x=>Number(x.id)===Number(id)); if(!s) return;
+  closeSheet();
+  $('spCall').textContent = s.activator || '?';
+  $('spAgo').textContent  = agoText(s) + (s.spotter ? ` door ${s.spotter}` : '');
+  $('spRef').textContent  = s.reference || '';
+  const facts = [
+    ['Frequentie / mode', `${s.frequency_khz||'?'} kHz · ${s.mode||'?'}`],
+    ['Gebied', s.reference_name || s.reference || '—'],
+    ['Locator daar', locator(s.latitude,s.longitude)],
+  ];
+  if(here) facts.push(['Jouw locator', locator(here.lat,here.lon)]);
+  if(s.remarks) facts.push(['Opmerking', s.remarks, true]);
+  $('spFacts').innerHTML = facts.map(([k,v,wide])=>
+    `<div class="fact${wide?' wide':''}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+
+  if(here){
+    const br = bearing(here.lat,here.lon,s.latitude,s.longitude);
+    $('spBearing').innerHTML =
+      `<span class="compass"><span class="n">N</span><span class="needle" style="transform:translate(-50%,-100%) rotate(${br.toFixed(0)}deg)"></span></span>
+       <span><div class="bg">${Math.round(br)}° · ${fmtKm(dist(s))}</div>
+       <div class="bs">${compassName(br)} — richting vanaf jouw locatie</div></span>`;
+  } else {
+    $('spBearing').innerHTML = `<span class="bs">Druk op ◎ om je eigen locatie te bepalen; dan verschijnt hier richting en afstand.</span>`;
+  }
+  $('spotSheet').classList.add('open');
+  document.body.classList.add('sheet-open');
+  requestAnimationFrame(()=>document.body.style.setProperty('--sheet-h',$('spotSheet').offsetHeight+'px'));
+  map.easeTo({center:[s.longitude,s.latitude], zoom:Math.max(map.getZoom(),9)});
+}
+$('closeSpot').onclick = ()=>{ $('spotSheet').classList.remove('open'); document.body.classList.remove('sheet-open'); };
+
+
+/* ================================================================== *
+ * Onderbalk en volledige schermen
+ * ================================================================== */
+document.body.classList.add('has-nav');
+$('nav').addEventListener('click', e=>{
+  const b=e.target.closest('button[data-view]'); if(!b) return;
+  [...$('nav').children].forEach(c=>c.classList.toggle('on',c===b));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  if(b.dataset.view!=='map'){ $(b.dataset.view).classList.add('on'); toggle(null); }
+  if(b.dataset.view==='viewSpots'){
+    // Wie naar dit scherm gaat wil de spots ook op de kaart zien.
+    if(!showSpots){
+      showSpots = true;
+      const o=document.querySelector('[data-layer="spots"]');
+      if(o){ o.classList.add('on'); o.querySelector('.sw').classList.add('on'); }
+    }
+    startSpots(); renderSpots(); applyVisibility();
+  }
+  if(b.dataset.view==='viewHeat') loadHeat();
+  if(b.dataset.view==='map' && map.getLayer('onff-fill') && !heatOnMap)
+    map.setPaintProperty('onff-fill','fill-color','#2d6a4f');
+  if(b.dataset.view==='viewRules') renderRules();
+  if(b.dataset.view==='viewSession') renderSession();
+  map.resize();
+});
+
+/* ================================================================== *
+ * Scherm 4 — activatiesessie en GPS-bewijs
+ * Volledig lokaal. ONFF eist bewijs bij de log; een track met
+ * "96% van 1u24 binnen ONFF-0104" is sterker bewijs dan een foto.
+ * ================================================================== */
+const sess = { on:false, t0:null, ref:null, points:[], inside:0, total:0, watch:null, tick:null };
+
+function renderSession(){
+  const ref = sess.ref || selected;
+  const z = ref && zones && zones.features.find(f=>f.properties.ref===ref);
+  $('sessRef').textContent = z ? `${z.properties.ref} · ${z.properties.name}` : t('sess.sub');
+  $('sessStart').disabled = !z && !sess.on;
+  updateSessionUI();
+}
+
+function updateSessionUI(){
+  const el=$('sessBanner');
+  if(!sess.on){
+    el.className='banner out';
+    $('sessB1').textContent = t('sess.unknown'); $('sessB2').textContent = t('sess.press');
+    return;
+  }
+  const last = sess.points[sess.points.length-1];
+  const inZone = last && last.in;
+  el.className = 'banner ' + (inZone?'in':'out');
+  $('sessB1').textContent = inZone ? t('sess.inside') : t('sess.outside');
+  $('sessB2').textContent = inZone
+    ? `${t('sess.pos')} ${sess.ref}`
+    : t('sess.outsidesub');
+}
+
+function fmtClock(ms){
+  const s=Math.floor(ms/1000);
+  return [Math.floor(s/3600),Math.floor(s/60)%60,s%60].map(n=>String(n).padStart(2,'0')).join(':');
+}
+
+$('sessStart').onclick = ()=>{
+  const ref = sess.ref || selected;
+  if(!ref){ alert(t('sess.pickfirst')); return; }
+  const zone = zones.features.find(f=>f.properties.ref===ref);
+  sess.on=true; sess.ref=ref; sess.t0=Date.now(); sess.points=[]; sess.inside=0; sess.total=0;
+  $('sessStart').hidden=true; $('sessStop').hidden=false; $('sessGpx').hidden=true; $('sessRec').hidden=false;
+  sess.watch = navigator.geolocation.watchPosition(pos=>{
+    const {latitude:lat,longitude:lon,accuracy}=pos.coords;
+    const inZone = pointInGeom(lon,lat,zone.geometry);
+    sess.points.push({lat,lon,acc:accuracy,t:new Date().toISOString(),in:inZone});
+    sess.total++; if(inZone) sess.inside++;
+    here={lat,lon};
+    updateSessionUI();
+  }, ()=>{}, {enableHighAccuracy:true, maximumAge:2000, timeout:20000});
+  sess.tick = setInterval(()=>{
+    $('sessClock').textContent = fmtClock(Date.now()-sess.t0);
+    $('sessPts').textContent = `${sess.points.length} ${t('sess.points')}`;
+    const pct = sess.total ? Math.round(100*sess.inside/sess.total) : 0;
+    const mins = Math.floor((Date.now()-sess.t0)/60000);
+    $('sessPct').textContent = `${t('sess.started')} ${new Date(sess.t0).toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'})} · ${pct}% ${t('sess.oftime')}`
+      + (mins<60 ? ` · ${t('sess.need60')} (${60-mins} ${t('sess.minleft')})` : ` · ${t('sess.ok60')}`);
+  }, 1000);
+  renderSession();
+};
+
+$('sessStop').onclick = ()=>{
+  sess.on=false;
+  if(sess.watch!=null) navigator.geolocation.clearWatch(sess.watch);
+  clearInterval(sess.tick);
+  $('sessStop').hidden=true; $('sessGpx').hidden=false; $('sessRec').hidden=true;
+  $('sessStart').hidden=false; $('sessStart').textContent = t('sess.restart');
+  updateSessionUI();
+};
+
+function sessionSummary(){
+  const pct = sess.total ? Math.round(100*sess.inside/sess.total) : 0;
+  const dur = sess.points.length ? (new Date(sess.points[sess.points.length-1].t) - new Date(sess.points[0].t)) : 0;
+  const z = zones.features.find(f=>f.properties.ref===sess.ref);
+  return {pct, dur, ref:sess.ref, name:z?z.properties.name:'', n:sess.points.length};
+}
+
+function toGPX(){
+  const {ref,name} = sessionSummary();
+  const pts = sess.points.map(p=>
+    `   <trkpt lat="${p.lat.toFixed(6)}" lon="${p.lon.toFixed(6)}"><time>${p.t}</time>`+
+    `<extensions><diana:inside>${p.in}</diana:inside><diana:accuracy>${Math.round(p.acc||0)}</diana:accuracy></extensions></trkpt>`
+  ).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Diana" xmlns="http://www.topografix.com/GPX/1/1" xmlns:diana="https://diana.app/ns">
+ <metadata><name>${ref} ${name}</name><time>${new Date(sess.t0).toISOString()}</time></metadata>
+ <trk><name>${ref} ${name}</name><trkseg>
+${pts}
+ </trkseg></trk>
+</gpx>`;
+}
+
+function summaryText(){
+  const s=sessionSummary();
+  const h=Math.floor(s.dur/3600000), m=Math.round(s.dur%3600000/60000);
+  return [
+    `Diana — activatiebewijs`,
+    ``,
+    `Referentie   : ${s.ref} ${s.name}`,
+    `Start        : ${new Date(sess.t0).toISOString()}`,
+    `Duur         : ${h} u ${m} min`,
+    `Meetpunten   : ${s.n}`,
+    `Binnen zone  : ${s.pct}% van de meetpunten`,
+    ``,
+    `ONFF vraagt minstens 60 minuten vanaf de eerste QSO en 44 QSO's`,
+    `(behalve bij QRP). Alle apparatuur moet binnen de referentiegrens staan.`,
+    ``,
+    `Bijgevoegde GPX bevat per meetpunt de tijd, de nauwkeurigheid en of`,
+    `het punt binnen de grens viel.`,
+  ].join('\n');
+}
+
+function download(name, text, type){
+  const url = URL.createObjectURL(new Blob([text],{type}));
+  const a = Object.assign(document.createElement('a'),{href:url,download:name});
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+$('sessGpx').onclick = ()=>{
+  if(!sess.points.length){ alert(t('sess.nopoints')); return; }
+  const stamp = new Date(sess.t0).toISOString().slice(0,10).replace(/-/g,'');
+  download(`${sess.ref}_${stamp}.gpx`, toGPX(), 'application/gpx+xml');
+  download(`${sess.ref}_${stamp}_bewijs.txt`, summaryText(), 'text/plain');
+};
+
+/* ================================================================== *
+ * Scherm 6 — regels en bandplan
+ * Frequenties uit de WWFF Global Rules §14.7 (niet 7130/14262!).
+ * ================================================================== */
+const BANDS = [
+  {n:'80m', lo:3500, hi:3800,  modes:['CW','SSB','Digi'], ssb:3744, cw:3544},
+  {n:'40m', lo:7000, hi:7200,  modes:['CW','SSB','Digi'], ssb:7144, cw:7024},
+  {n:'30m', lo:10100,hi:10150, modes:['CW','Digi'],                  cw:10124},
+  {n:'20m', lo:14000,hi:14350, modes:['CW','SSB','Digi'], ssb:14244, cw:14044},
+  {n:'17m', lo:18068,hi:18168, modes:['CW','SSB','Digi'], ssb:18144, cw:18084},
+  {n:'15m', lo:21000,hi:21450, modes:['CW','SSB','Digi'], ssb:21244, cw:21044},
+  {n:'12m', lo:24890,hi:24990, modes:['CW','SSB','Digi'], ssb:24944, cw:24894},
+  {n:'10m', lo:28000,hi:29700, modes:['CW','SSB','Digi','FM'], ssb:28444, cw:28044},
+];
+const RULES = ['qso','dur','bound','call','proof','log'];
+function renderRules(){
+  $('rulesBody').innerHTML =
+    `<tr><td></td><td><b>WWFF</b> · <b>ONFF</b></td></tr>` +
+    RULES.map(k=>`<tr><td>${t('rules.'+k)}</td><td>${t('rules.w.'+k)} · <b>${t('rules.o.'+k)}</b></td></tr>`).join('');
+  const cur = currentBand();
+  $('bandBox').innerHTML = BANDS.map(b=>{
+    const here_ = cur && cur.n===b.n;
+    const wwff = [b.ssb&&`SSB ${(b.ssb/1000).toFixed(3)} MHz`, b.cw&&`CW ${(b.cw/1000).toFixed(3)} MHz`]
+                 .filter(Boolean).join(' · ');
+    return `<div class="band${here_?' here':''}">
+      <div class="bh"><span class="bn">${b.n}</span><span class="br">${b.lo.toLocaleString('nl-BE')} – ${b.hi.toLocaleString('nl-BE')} kHz</span></div>
+      <div class="modes">${b.modes.map(m=>`<span class="mode">${m}</span>`).join('')}</div>
+      <div class="wwff">${t('rules.pref')}: ${wwff}${here_?' · '+t('rules.yourband'):''}</div>
+    </div>`;
+  }).join('');
+}
+function currentBand(){
+  // Als er een spot van jezelf actief is, markeren we die band. Nog niet gekoppeld
+  // aan een transceiver — dat kan later via CAT of via de eigen self-spot.
+  return null;
+}
+
+/* ================================================================== *
+ * Scherm 7 — activatie-heatmap uit de ONFF-statussheet
+ * ================================================================== */
+const SHEET = '1MFZzdq6xJtpvTtOHfRob6Pvxeo2_5YOQSHjVE0wAyac';
+const sheetURL = tab => `https://docs.google.com/spreadsheets/d/${SHEET}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+let heat = null, heatLoaded = false, heatOnMap = false;
+
+function parseCSV(text){
+  const rows=[]; let row=[], cell='', q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; } else cell+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(cell); cell=''; }
+    else if(c==='\n'){ row.push(cell); rows.push(row); row=[]; cell=''; }
+    else if(c!=='\r') cell+=c;
+  }
+  if(cell||row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+
+async function loadHeat(){
+  if(heatLoaded) return;
+  const years = []; const now = new Date().getFullYear();
+  for(let y=now; y>=now-6; y--) years.push(String(y));
+  try{
+    const texts = await Promise.all(years.map(y=>
+      fetch(sheetURL(y),{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'')));
+    const last = {};   // ref -> {date, qso, count}
+    texts.forEach(txt=>{
+      if(!txt) return;
+      const rows = parseCSV(txt);
+      const head = rows[0]||[];
+      const iDate = head.findIndex(h=>/activity date/i.test(h));
+      const iQso  = head.findIndex(h=>/qso/i.test(h));
+      const iRef  = head.findIndex(h=>/onff ref/i.test(h));
+      if(iDate<0||iRef<0) return;
+      for(const r of rows.slice(1)){
+        const ref=(r[iRef]||'').trim(); if(!/^ONFF-\d+/.test(ref)) continue;
+        const d = r[iDate]; const qso = parseInt(r[iQso]||'0',10)||0;
+        const e = last[ref] || (last[ref]={date:null,qso:0,count:0});
+        e.qso += qso; e.count++;
+        if(!e.date || d > e.date) e.date = d;
+      }
+    });
+    heat = last; heatLoaded = true;
+    paintHeat();
+  }catch(err){
+    $('heatBox').innerHTML = `<p class="hint" style="color:#b45309">${
+      (err instanceof TypeError)
+        ? t('heat.cors')
+        : t('heat.fail')+' '+err.message}</p>`;
+  }
+}
+
+function paintHeat(){
+  if(!zones) return;
+  const refs = Object.keys(heat);
+  const today = new Date();
+  const years = r => (heat[r] && heat[r].date)
+    ? (today - new Date(heat[r].date))/(365.25*24*3600*1000) : 99;
+  $('heatBox').innerHTML = `
+    <div class="srow"><span class="b1"><b>${refs.length}</b> ${t('heat.activated')}</span>
+      <span class="r">${zones.features.length - refs.length} ${t('heat.never')}</span></div>
+    <div class="legend"><span>${t('heat.long')}</span><span class="ramp"></span><span>${t('heat.recent')}</span></div>`;
+
+  // kleur de zones op recentheid van de laatste activatie
+  const expr = ['case'];
+  const buckets = [[0.5,'#16a34a'],[1,'#84cc16'],[2,'#facc15'],[4,'#f59e0b']];
+  for(const [yr,col] of buckets){
+    const list = refs.filter(r=>years(r)<yr);
+    if(list.length){ expr.push(['in',['get','ref'],['literal',list]], col); }
+  }
+  expr.push('#dc2626');   // nooit of heel lang geleden
+  // Een 'case' met alleen een terugval is ongeldig — dan volstaat één kleur.
+  const paint = expr.length > 2 ? expr : '#dc2626';
+  if(map.getLayer('onff-fill')) map.setPaintProperty('onff-fill','fill-color',paint);
+
+  const neglected = zones.features
+    .map(f=>({ref:f.properties.ref, name:f.properties.name, y:years(f.properties.ref)}))
+    .sort((a,b)=>b.y-a.y).slice(0,12);
+  $('negList').innerHTML = neglected.map(n=>
+    `<div class="neg"><span>${n.ref} · ${n.name}</span><span class="nr">${
+      n.y>90 ? t('heat.neveryet') : `${Math.floor(n.y)} ${t('heat.yearsago')}`}</span></div>`).join('');
+  $('heatNeg').hidden = false;
+  heatOnMap = true;
+}
+
+/* ---------- offline: service worker + gebied downloaden ---------- */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.addEventListener('message', e=>{
+    if(e.data?.type==='PREFETCH_PROGRESS')
+      showStatus('out', 'Gebied downloaden…', `${e.data.done} van ${e.data.total} tegels`);
+    if(e.data?.type==='PREFETCH_DONE')
+      showStatus('in', 'Gebied opgeslagen', `${e.data.done} tegels beschikbaar zonder netwerk.`);
+  });
+}
+
+/* Bereken de tegels van het huidige kaartvenster op zoom 8 t/m 14 en laat de
+   service worker ze binnenhalen. Dit is de knop die je indrukt vóór je vertrekt. */
+function prefetchArea(){
+  if(!navigator.serviceWorker?.controller){
+    showStatus('out','Offline opslaan kan hier niet','Dat werkt pas wanneer Diana van een webadres draait.');
+    return;
+  }
+  const b = map.getBounds(), urls = [];
+  const lon2x = (lon,z)=>Math.floor((lon+180)/360*2**z);
+  const lat2y = (lat,z)=>Math.floor((1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*2**z);
+  for(let z=8; z<=14; z++){
+    const x1=lon2x(b.getWest(),z), x2=lon2x(b.getEast(),z);
+    const y1=lat2y(b.getNorth(),z), y2=lat2y(b.getSouth(),z);
+    if((x2-x1+1)*(y2-y1+1) > 900) continue;         // te groot venster voor dit zoomniveau
+    for(let x=x1;x<=x2;x++) for(let y=y1;y<=y2;y++)
+      urls.push(`https://tiles.openfreemap.org/planet/${z}/${x}/${y}.pbf`);
+  }
+  if(!urls.length){ showStatus('out','Zoom eerst wat in','Het huidige venster is te groot om offline te bewaren.'); return; }
+  showStatus('out','Gebied downloaden…',`0 van ${urls.length} tegels`);
+  navigator.serviceWorker.controller.postMessage({type:'PREFETCH_TILES', urls});
+}
+
+/* ---------- GPS: sta ik in de zone? ---------- */
+function pointInRing(x,y,ring){
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const [xi,yi]=ring[i], [xj,yj]=ring[j];
+    if(((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside;
+  }
+  return inside;
+}
+function pointInGeom(x,y,geom){
+  for(const poly of geom.coordinates){
+    if(pointInRing(x,y,poly[0])){
+      let inHole=false;
+      for(let h=1;h<poly.length;h++) if(pointInRing(x,y,poly[h])) inHole=true;
+      if(!inHole) return true;
+    }
+  }
+  return false;
+}
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000, t=Math.PI/180;
+  const a=Math.sin((lat2-lat1)*t/2)**2 +
+          Math.cos(lat1*t)*Math.cos(lat2*t)*Math.sin((lon2-lon1)*t/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+function distanceToZone(lat,lon,f){
+  // Kortste afstand tot een randpunt. Ruim genoeg voor "hoe ver sta je van de grens".
+  let best=Infinity;
+  for(const poly of f.geometry.coordinates)
+    for(const [x,y] of poly[0]){
+      const d=haversine(lat,lon,y,x);
+      if(d<best) best=d;
+    }
+  return best;
+}
+function locate(){
+  if(!navigator.geolocation){ showStatus('out','Geen GPS beschikbaar','Deze browser deelt geen locatie.'); return; }
+  showStatus('out','Locatie zoeken…','');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const {latitude:lat, longitude:lon, accuracy} = pos.coords;
+    here = {lat, lon};
+    marker.setLngLat([lon,lat]).addTo(map);
+    map.easeTo({center:[lon,lat], zoom:Math.max(map.getZoom(),12)});
+    evaluate(lat,lon,accuracy);
+    renderSpots();
+  }, err=>{
+    showStatus('out','Locatie niet gelukt', err.message);
+  }, {enableHighAccuracy:true, timeout:12000, maximumAge:5000});
+}
+function evaluate(lat,lon,accuracy){
+  const cand = index.filter(z => lon>=z.bbox[0]-0.02 && lon<=z.bbox[2]+0.02 &&
+                                 lat>=z.bbox[1]-0.02 && lat<=z.bbox[3]+0.02);
+  const inside=[];
+  for(const z of cand){
+    const f = zones.features.find(x=>x.properties.ref===z.ref);
+    if(pointInGeom(lon,lat,f.geometry)) inside.push(f);
+  }
+  const acc = Math.round(accuracy||0);
+  if(inside.length){
+    // Randgeval: sta je zó dicht bij de grens dat de GPS-fout het antwoord kan omdraaien?
+    const edge = Math.min(...inside.map(f=>distanceToZone(lat,lon,f)));
+    const names = inside.map(f=>`${f.properties.ref} ${f.properties.name}`).join(' · ');
+    if(edge < acc){
+      showStatus('near', `Vlak bij de grens van ${inside[0].properties.ref}`,
+        `±${Math.round(edge)} m van de rand, GPS-nauwkeurigheid ±${acc} m — controleer visueel.`);
+    } else {
+      showStatus('in', inside.length>1 ? `Je staat in ${inside.length} gebieden` : 'Je staat in het gebied',
+        `${names} — ${Math.round(edge)} m tot de dichtstbijzijnde grens.`);
+    }
+    select(inside[0].properties.ref, inside.map(f=>f.properties.ref));
+  } else {
+    let best=null,bd=Infinity;
+    for(const z of index){
+      const d=haversine(lat,lon,z.lat??((z.bbox[1]+z.bbox[3])/2),z.lon??((z.bbox[0]+z.bbox[2])/2));
+      if(d<bd){bd=d;best=z;}
+    }
+    const f = zones.features.find(x=>x.properties.ref===best.ref);
+    const edge = distanceToZone(lat,lon,f);
+    showStatus('out','Je staat buiten een ONFF-gebied',
+      `Dichtstbij: ${best.ref} ${best.name} — ${edge>1500?(edge/1000).toFixed(1)+' km':Math.round(edge)+' m'}.`);
+  }
+}
+function showStatus(kind,t1,t2){
+  const el=$('status');
+  el.className='status show '+kind;
+  $('stT1').textContent=t1; $('stT2').textContent=t2;
+}
+const marker = new maplibregl.Marker({color:'#1b4332'});
+
+/* eigen locatieknop, onderaan bij de zoomknoppen */
+class LocateControl{
+  onAdd(){ const d=document.createElement('div');
+    d.className='maplibregl-ctrl maplibregl-ctrl-group';
+    d.innerHTML='<button type="button" title="Waar sta ik?" style="font-size:15px">◎</button>';
+    d.onclick=locate; return d; }
+  onRemove(){}
+}
+map.addControl(new LocateControl(),'bottom-right');
+
+/* Esc sluit alles */
+addEventListener('keydown', e=>{ if(e.key==='Escape'){ toggle(null); closeSheet(); $('closeSpot').onclick(); }});
+</script>
+</body>
+</html>

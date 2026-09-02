@@ -1,0 +1,10 @@
+{
+  "source_file": "ONFF 20260101.kmz",
+  "release": "2026-01-01",
+  "generated": "2026-09-02T14:58:18Z",
+  "zones": 932,
+  "source_polygons": 11932,
+  "tolerance_deg": 5e-05,
+  "decimals": 5,
+  "script_version": "1.0.0"
+}

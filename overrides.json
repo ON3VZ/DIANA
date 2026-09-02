@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "Handmatige correcties op de KMZ-data. Deze blijven staan bij elke nieuwe release.",
+    "Sleutel is altijd het ONFF-nummer, nooit de naam — namen bevatten typfouten en dubbels.",
+    "Elk veld is optioneel en overschrijft wat uit het KMZ komt.",
+    "Velden: name, province, desig, iucn, manager, registration, region."
+  ],
+  "zones": {
+    "ONFF-0002": {
+      "name": "Kalmthoutse Heide",
+      "_why": "KMZ schrijft afwisselend 'Kalmhoutse heide' en 'Kalmthoutse Heide'"
+    },
+    "ONFF-0110": {
+      "name": "Fort van Oelegem",
+      "_why": "KMZ bevat de typfout 'Fort van Oegegem'"
+    },
+    "ONFF-0599": {
+      "name": "Carrière de l'Alouette",
+      "_why": "KMZ schrijft \"Carriere de 'Alouttel\" — twee typfouten"
+    },
+    "ONFF-0001": {
+      "name": "Hautes Fagnes",
+      "_why": "naam komt uit de bestandsnaam hautes-fagnes.kmz"
+    }
+  }
+}
