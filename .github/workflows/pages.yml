@@ -1,0 +1,138 @@
+name: Publiceren naar GitHub Pages
+
+# Alles binnen GitHub. Geen externe dienst.
+#
+#   push naar main          → de live site
+#   pull request            → een preview op .../preview/pr-<nummer>/
+#   pull request gesloten   → die preview wordt opgeruimd
+#   handmatig (Run workflow)→ hetzelfde als een push, handig voor de eerste keer
+#
+# De preview is de reden dat dit naar een gh-pages-branch publiceert in plaats van
+# via de standaard Pages-actie: zonder preview is "merge" een sprong in het duister.
+#
+# EERST INSTELLEN, anders faalt de push met een 403:
+#   Settings → Actions → General → Workflow permissions → "Read and write permissions"
+#
+# DAARNA, pas nadat deze workflow één keer groen gedraaid heeft:
+#   Settings → Pages → Source "Deploy from a branch" → branch "gh-pages", map "/ (root)"
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pages-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Site samenstellen (zonder source/)
+        if: github.event.action != 'closed'
+        run: |
+          bash build/site.sh _site
+          test -f _site/index.html || { echo "::error::_site/index.html ontbreekt"; exit 1; }
+
+      - name: Bestemming bepalen
+        id: dest
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "path=preview/pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=." >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bestaande gh-pages ophalen
+        id: fetch
+        continue-on-error: true          # de eerste keer bestaat die branch nog niet
+        run: |
+          git clone --depth=1 --branch gh-pages \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" .pages
+
+      - name: gh-pages voor het eerst aanmaken
+        if: steps.fetch.outcome != 'success'
+        run: |
+          echo "gh-pages bestond nog niet — nieuwe branch."
+          rm -rf .pages && mkdir .pages
+          cd .pages
+          git init -q -b gh-pages
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+
+      - name: Site op zijn plaats zetten
+        if: github.event.action != 'closed'
+        run: |
+          DEST=".pages/${{ steps.dest.outputs.path }}"
+          if [ "${{ steps.dest.outputs.path }}" = "." ]; then
+            # live site vervangen, maar de previews laten staan
+            find .pages -mindepth 1 -maxdepth 1 ! -name preview ! -name .git -exec rm -rf {} +
+          else
+            rm -rf "$DEST"
+          fi
+          mkdir -p "$DEST"
+          cp -r _site/. "$DEST/"
+          touch .pages/.nojekyll     # anders negeert Pages mappen die met _ beginnen
+
+      - name: Preview opruimen bij een gesloten pull request
+        if: github.event.action == 'closed'
+        run: rm -rf ".pages/preview/pr-${{ github.event.pull_request.number }}"
+
+      - name: Publiceren
+        run: |
+          cd .pages
+          git config user.name  "diana-bot"
+          git config user.email "diana-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Niets gewijzigd — niets te publiceren."
+            exit 0
+          fi
+          git commit -q -m "publiceren: ${{ steps.dest.outputs.path }} (${GITHUB_SHA::7})"
+          git push -q origin gh-pages
+          echo "Gepubliceerd naar gh-pages: ${{ steps.dest.outputs.path }}"
+
+      - name: Waar het nu staat
+        if: github.event.action != 'closed'
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          BASE="https://${OWNER}.github.io/${REPO}"
+          if [ "${{ steps.dest.outputs.path }}" = "." ]; then
+            echo "### 🗺️ Live site: ${BASE}/" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### 🗺️ Preview: ${BASE}/${{ steps.dest.outputs.path }}/" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Staat Pages nog uit? Settings → Pages → branch \`gh-pages\`, map \`/ (root)\`." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preview-link onder de pull request zetten
+        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          URL="https://${OWNER}.github.io/${REPO}/preview/pr-${{ github.event.pull_request.number }}/"
+          MARKER="<!-- diana-preview -->"
+          BODY="${MARKER}
+          ### 🗺️ Preview van deze wijziging
+
+          ${URL}
+
+          Kijk naar de kaart vóór je merget. Pages heeft een minuut of twee nodig."
+          ID=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+                 --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" | head -n 1)
+          if [ -n "$ID" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$ID" -f body="$BODY" >/dev/null
+          else
+            gh api -X POST "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" -f body="$BODY" >/dev/null
+          fi
