@@ -89,8 +89,9 @@ Dit is de hele procedure. Er komt geen commando aan te pas.
 Een verdwenen gebied is geen fout maar echte informatie — ONFF schrapt gebieden. Daarom
 staat het in het rapport en wordt het nooit stilzwijgend toegepast.
 
-Luk gebruikt hiervoor het `/admin`-scherm in de app zelf, dat op dezelfde machinerie
-draait: uploaden, rapport lezen, publiceren.
+Bij die pull request verschijnt ook een **preview-link** naar de kaart met de nieuwe
+data. Kijk daarnaar vóór je merget — dat is de enige controle die er is. Zie
+[DEPLOY.md](DEPLOY.md).
 
 ---
 

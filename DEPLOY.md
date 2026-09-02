@@ -1,98 +1,154 @@
-# Diana online zetten
+# Diana online zetten — alles binnen GitHub
 
-Kort antwoord op "alles erin en dan Pages activeren?": **ja, alles erin — maar niet
-alles online.** En "Pages" is de plek waar de keuze zit tussen twee wegen die niet
-evenveel waard zijn.
-
----
-
-## 1. Wat er in de repo gaat
-
-Alles uit `diana-repo.zip`, plus het KMZ:
-
-```
-source/ONFF 20260101.kmz     ← zelf uploaden, zat niet in de zip (17 MB)
-build/    data/    web/    overrides.json    .github/    README.md    DEPLOY.md
-```
-
-Het KMZ hoort **wel** in de repo (de Action leest het) maar **niet** online. ONFF
-verspreidt dat bestand via een groups.io achter lidmaatschap; het ongevraagd op een
-publieke URL zetten is niet aan ons. Daarom publiceren we niet de repo-map zelf, maar
-een aparte map die `build/site.sh` samenstelt:
-
-```bash
-bash build/site.sh _site
-```
-
-Dat zet `web/` en de drie datafiles in `_site/`, en laat `source/` er bewust buiten.
-Wat niet in `_site` staat, komt niet online.
+Geen Cloudflare, geen externe dienst. Eén repo, GitHub Pages, en één beheerder die
+uploadt. Dit document zegt ook eerlijk wat daarbij openbaar wordt en wat niet.
 
 ---
 
-## 2. Cloudflare Pages of GitHub Pages?
+## 1. Eerst de vraag die er echt toe doet
 
-|  | Cloudflare Pages | GitHub Pages |
+> "Nadeel, publiek. Maar data mag niet zomaar te grabbel?"
+
+Er zitten drie verschillende dingen in die vraag, en maar één ervan is een echte keuze.
+
+### De zonegrenzen worden hoe dan ook openbaar
+
+Diana is een statische webapp. De browser van elke bezoeker **downloadt
+`onff.geojson`** — dat is hoe de kaart werkt. Wie de app kan openen, kan dat bestand
+opslaan. Dat geldt bij GitHub Pages, bij Cloudflare, bij eender welke hosting, en
+of de repo nu publiek of privé staat.
+
+Met andere woorden: **de app publiceren ís de grenzen publiceren.** Wil ONFF dat niet,
+dan kan Diana als publieke webapp niet bestaan — dan wordt het een besloten app achter
+een login, en dat is een heel ander project.
+
+Ter geruststelling: die grenzen staan feitelijk al publiek. Het ONFF-blogspot toont ze
+per provincie in ingebedde Google My Maps, zonder login.
+
+### De repo publiek zetten voegt daar één ding aan toe
+
+Namelijk het **oorspronkelijke KMZ-bestand**, als bestand, herdistribueerd op een
+tweede kanaal. ONFF verspreidt dat via de BOS-groups.io, achter een lidmaatschap. Dat
+is geen geheime data — het is grotendeels een WDPA-export, en WDPA is zelf een open
+dataset — maar het is wél Luks werk, verspreid via zijn kanaal.
+
+**Dat is dus geen technische vraag maar een beleefdheidsvraag, en ze is voor Luk.**
+
+Wat je hem kan voorleggen, in één zin: *"Diana wordt open source op GitHub. De
+zonegrenzen komen daarmee als databestand online — dat moet, anders werkt de kaart
+niet. Mag het bron-KMZ er ook bij, of houden we dat buiten de publieke repo?"*
+
+### En dan zijn er twee wegen
+
+| | Als Luk akkoord is | Als Luk liever niet |
 |---|---|---|
-| Private repo op een gratis plan | **ja** | **nee** — vereist GitHub Pro of Team |
-| Preview-URL per pull request | **ja**, automatisch | nee |
-| Eigen domein, HTTPS | ja | ja |
-| De Worker die we later nodig hebben | zelfde account | apart |
+| Opzet | **één publieke repo** | **twee repo's**: privé voor de bron, publiek voor de site |
+| KMZ | staat in `source/`, publiek | blijft in de private repo |
+| Complexiteit | laag | één extra repo en één token |
+| Kosten | €0 | €0 (2.000 gratis Action-minuten per maand volstaan ruim) |
 
-Die tweede rij is de reden dat het plan Cloudflare koos. Het adminverhaal draait erop:
-Luk uploadt een nieuw KMZ, en kijkt naar de **échte kaart met de nieuwe data** voor hij
-op publiceren duwt. Zonder preview per pull request valt die controle weg en wordt
-"merge" een sprong in het duister.
-
-**Advies: Cloudflare Pages.** GitHub Pages is prima als je de repo publiek maakt en de
-preview niet mist — de workflow daarvoor staat hieronder klaar.
+Hieronder staat weg 1 volledig uitgewerkt. Weg 2 staat in §5.
 
 ---
 
-## 3. Cloudflare Pages instellen
+## 2. Weg 1 — één publieke repo (aanbevolen als Luk akkoord is)
 
-1. Maak de repo op GitHub. **Private** om te beginnen (zie het plan, §2).
-2. Push alles, en upload `ONFF 20260101.kmz` naar `source/`.
-3. Cloudflare → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**,
-   koppel je GitHub-account en kies de repo.
-4. Build-instellingen:
+### Instellen, één keer
 
-   | Veld | Waarde |
-   |---|---|
-   | Framework preset | None |
-   | Build command | `bash build/site.sh _site` |
-   | Build output directory | `_site` |
-   | Root directory | *(leeg)* |
+1. Maak op GitHub een **publieke** repo, bijvoorbeeld `diana`.
+2. Zet alles uit `diana-repo.zip` erin, plus `ONFF 20260101.kmz` in `source/`.
+3. Repo-instellingen → **Pages** → Source: **Deploy from a branch** → branch
+   `gh-pages`, map `/ (root)`. (Die branch bestaat nog niet; hij wordt bij de eerste
+   push aangemaakt. Zet dit dus in nadat de eerste workflow gedraaid heeft.)
+4. Nodig de beheerder uit als **collaborator** met de rol *Write*. Meer heeft hij niet
+   nodig om te uploaden en te mergen.
 
-5. Deploy. Je krijgt `https://<naam>.pages.dev`.
-6. Open een pull request om te controleren dat je een preview-URL krijgt. Dat is de
-   controle waar de hele adminmodule op steunt.
+Je site staat dan op `https://<gebruiker>.github.io/diana/`.
 
-Later komt daar de Worker bij (spotsproxy, self-spot, dagelijkse sheet-cron) en
-eventueel Cloudflare Access voor `/admin`. Beide op hetzelfde account, beide gratis.
+### Wat er automatisch gebeurt
+
+| Wanneer | Wat |
+|---|---|
+| pull request met een nieuw KMZ | `build-data.yml` zet het om en plakt het verschillenrapport eronder |
+| dezelfde pull request | `pages.yml` publiceert een **preview** op `.../preview/pr-12/` en zet die link eronder |
+| merge naar `main` | de live site wordt bijgewerkt |
+| pull request gesloten | de preview wordt opgeruimd |
+
+Die preview is er met opzet. GitHub Pages heeft dat niet standaard — daarom publiceert
+`pages.yml` naar een `gh-pages`-branch in plaats van via de standaard Pages-actie. Zo
+kan de beheerder **naar de echte kaart met de nieuwe data kijken vóór hij merget**, en
+dat is de enige controle die er is.
+
+### Wat er niet online komt
+
+`build/site.sh` stelt de te publiceren map samen uit `web/` en de drie datafiles, en
+laat `source/` er bewust buiten. Het KMZ staat dus wel in de repo-boom (want de Action
+leest het), maar wordt niet als website uitgeleverd.
 
 ---
 
-## 4. Als je toch GitHub Pages wil
+## 3. Wat de beheerder doet
 
-Alleen zinvol met een **publieke** repo, tenzij je Pro of Team hebt. Zet dan
-`.github/workflows/pages.yml` aan (staat in de repo, met een `workflow_dispatch` zodat
-hij niet ongevraagd draait) en zet in de repo-instellingen **Pages → Source → GitHub
-Actions**.
+De volledige procedure, zonder één commando:
 
-Let op: bij een publieke repo staat ook `source/ONFF 20260101.kmz` publiek in de
-repo-boom, ook al publiceren we hem niet als website. Dat is een gesprek met Luk, geen
-technische instelling.
+1. Haal de nieuwe `ONFF_YYYYMMDD.kmz` van de BOS-groups.io.
+2. Op github.com naar `source/` → **Add file → Upload files** → sleep het bestand erin
+   → onderaan **Create a new branch for this commit** → **Propose changes**.
+3. Wacht een paar minuten. Onder de pull request verschijnen twee reacties: het
+   verschillenrapport en de preview-link.
+4. Open de preview en kijk naar de kaart.
+5. Klopt het? **Merge.** Dat is publiceren.
+6. Klopt het niet? Sluit de pull request. Of, als er al gemerged is: **Revert** op de
+   merge-commit, en de vorige versie staat er weer.
+
+Eén beheerder volstaat. Wil je er later meer, dan is dat een collaborator toevoegen.
 
 ---
 
-## 5. Volgorde die ik zou aanhouden
+## 4. Grenzen om te kennen
 
-1. Repo aanmaken, alles erin, KMZ erbij → controleer dat de Action groen draait en een
-   rapport onder de pull request zet.
-2. Cloudflare Pages koppelen → controleer de preview-URL bij een pull request.
-3. Op de live URL de app openen en kijken of de **spots** en de **heatmap** laden. Doen
-   ze dat, dan hebben we geen proxy nodig. Zeggen ze "CORS", dan is de Worker de
-   volgende stap.
-4. Pas daarna een eigen domein, en pas daarna `/admin` voor Luk.
+- **Bestandsgrootte in de browser: 25 MiB.** Het KMZ is 17 MB, dus dat past. Groeit het
+  ooit voorbij 25 MiB, dan moet het via git in plaats van via de webinterface.
+- **Pages-site: max 1 GB, en zachte limiet van 10 builds per uur.** Wij zitten op zo'n
+  5 MB per publicatie en enkele builds per maand.
+- **Actions op een publieke repo zijn gratis en onbeperkt.**
+- **De repo-historie bewaart elk KMZ voorgoed.** Bij ongeveer 17 MB per release en een
+  paar releases per jaar duurt het jaren voor dat ergens tegenaan loopt.
 
-Stap 3 is de goedkoopste manier om de laatste open vraag uit het plan te beantwoorden.
+---
+
+## 5. Weg 2 — twee repo's, als het KMZ niet publiek mag
+
+Ook volledig binnen GitHub.
+
+```
+diana-source   (privé)  source/ build/ overrides.json  + de conversie-Action
+      │  duwt data/ en web/ na een merge naar
+      ▼
+diana          (publiek)  de site + de data   → GitHub Pages
+```
+
+- De beheerder uploadt in de **private** repo. Alles wat hij ziet — het rapport, de
+  goedkeuring — blijft daar.
+- Een fine-grained token met schrijfrechten op enkel de publieke repo staat als secret
+  in de private repo; de Action duwt daarmee de gebouwde site door.
+- Private Actions-minuten: 2.000 gratis per maand, en één conversie duurt ongeveer een
+  minuut.
+- Wat je inlevert: de preview-URL zit dan in de publieke repo, terwijl de goedkeuring
+  in de private gebeurt. Werkbaar, maar minder rechtlijnig dan weg 1.
+
+Begin niet hiermee. Begin met de vraag aan Luk.
+
+---
+
+## 6. De allereerste keer
+
+1. Repo aanmaken, alles erin, KMZ in `source/`.
+2. Eén pull request maken (bijvoorbeeld een kleine wijziging in `overrides.json`) en
+   controleren dat je twee reacties krijgt: het rapport en de preview-link.
+3. Mergen, dan Pages → branch `gh-pages` instellen.
+4. **De live site openen en kijken of de spots en de heatmap laden.** Dat beantwoordt
+   in tien seconden de laatste open vraag uit het plan: hebben we ooit een proxy nodig,
+   of niet?
+
+Punt 4 is meteen de goedkoopste test in het hele project.
