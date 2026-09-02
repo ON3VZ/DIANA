@@ -12,14 +12,24 @@ const SHELL     = `${VERSION}-shell`;
 const TILES     = `${VERSION}-tiles`;
 const TILE_MAX  = 3000;               // ruwweg 60 MB aan vectortegels
 
+// Zowel de gepubliceerde indeling (data naast index.html) als de repo-indeling
+// (data een niveau hoger) staat erin. Wat niet bestaat, wordt overgeslagen:
+// addAll() faalt in zijn geheel bij één 404, dus we cachen stuk voor stuk.
 const SHELL_FILES = [
   './', './index.html', './manifest.webmanifest',
   './vendor/maplibre-gl.js', './vendor/maplibre-gl.css',
+  './data/onff.geojson', './data/onff-index.json', './data/meta.json',
   '../data/onff.geojson', '../data/onff-index.json', '../data/meta.json',
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(SHELL).then(c => c.addAll(SHELL_FILES)).then(()=>self.skipWaiting()));
+  e.waitUntil((async () => {
+    const cache = await caches.open(SHELL);
+    await Promise.all(SHELL_FILES.map(u =>
+      cache.add(u).catch(() => {})     // ontbrekende indeling: gewoon overslaan
+    ));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', e => {

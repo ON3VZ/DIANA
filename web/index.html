@@ -588,11 +588,22 @@ let selected = null;
 let watchId = null;
 
 /* ---------- data laden ---------- */
+async function fetchFirst(urls){
+  let lastErr;
+  for(const u of urls){
+    try{ const r = await fetch(u); if(r.ok) return await r.json(); lastErr = new Error(r.status+' '+u); }
+    catch(e){ lastErr = e; }
+  }
+  throw lastErr;
+}
+
 async function loadData(){
   if (window.DIANA_ZONES){            // ingebakken in de losse previewversie
     zones = window.DIANA_ZONES;
   } else {
-    zones = await (await fetch('../data/onff.geojson')).json();
+    // Gepubliceerd staat de data náást index.html; in de repo staat ze een niveau
+    // hoger. Beide werken, zonder bouwstap voor lokaal gebruik.
+    zones = await fetchFirst(['./data/onff.geojson','../data/onff.geojson']);
   }
   index = zones.features.map(f => {
     const b = bboxOf(f.geometry);

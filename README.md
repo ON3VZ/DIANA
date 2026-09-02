@@ -4,7 +4,7 @@ Kaart-app voor de Belgische ONFF-natuurgebieden (Belgian Flora & Fauna, onderdee
 WWFF) met live WWFF-spots. Een PWA op een open-source achtergrondkaart, die offline
 werkt en embedbaar is op een website.
 
-Dit is de repo. Het volledige plan staat in `Diana - Technisch plan v0.6.md`.
+Dit is de repo. Het volledige plan staat in `Diana - Technisch plan v0.6.md`; online zetten staat in [DEPLOY.md](DEPLOY.md).
 
 ---
 
@@ -16,6 +16,7 @@ build/            de omzetting van KMZ naar de datafiles die de app laadt   ← 
 data/             het resultaat — dit is wat de app ophaalt
 overrides.json    handmatige correcties die elke nieuwe release overleven
 web/              de webapplicatie zelf                                     ← runtime
+_site/            wat er gepubliceerd wordt (gemaakt door build/site.sh, niet in git)
 .github/          de Action die dit alles automatisch doet bij een pull request
 ```
 
