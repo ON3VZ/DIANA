@@ -198,6 +198,15 @@
     overflow:auto;padding:16px 16px 28px;display:none;
   }
   .view.on{display:block}
+  /* De heatmap is geen apart scherm maar een paneel over de kaart — anders zie je
+     de ingekleurde gebieden niet, en dat is nu juist het hele punt. */
+  .view.panel{
+    inset:auto 0 62px 0; max-height:52vh; background:var(--card);
+    border-radius:20px 20px 0 0; box-shadow:0 -6px 30px rgba(18,41,29,.16);
+    padding:8px 16px 18px;
+  }
+  .view.panel h1{font-size:19px}
+  .view.panel .sub{margin-bottom:10px}
   .view h1{font-size:22px;letter-spacing:-.02em;margin:4px 0 2px}
   .view .sub{color:var(--ink-3);font-size:13.5px;margin:0 0 16px}
   .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
@@ -229,6 +238,16 @@
   .band.here{border-color:var(--leaf);background:#f2f9f4}
   .band .bh{display:flex;justify-content:space-between;align-items:baseline}
   .band .bn{font-weight:700;font-size:16px}
+  .bar{position:relative;height:12px;border-radius:6px;background:var(--paper);margin:10px 0 9px;overflow:visible}
+  .bar .sg{position:absolute;top:0;height:12px;border-radius:3px}
+  .bar .mk{position:absolute;top:-3px;width:2px;height:18px;border-radius:2px;transform:translateX(-1px)}
+  .bar .mk.mkw{background:var(--amber)}
+  .bar .mk.ft8{background:#7c3aed}
+  .sgrows{display:grid;gap:3px}
+  .sgrow{display:flex;align-items:center;gap:8px;font-size:12.5px}
+  .sgrow .dot{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+  .sgrow .m{width:38px;font-weight:600;color:var(--ink-2)}
+  .sgrow .r{color:var(--ink-3);font-variant-numeric:tabular-nums}
   .band .br{font-size:12.5px;color:var(--ink-3)}
   .modes{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
   .mode{font-size:11.5px;padding:4px 9px;border-radius:99px;background:var(--paper);color:var(--ink-2)}
@@ -374,12 +393,17 @@
   <p class="privacy">🔒 <span data-i18n="sess.privacy">Je track blijft op dit toestel. Er gaat niets naar een server tot je zelf exporteert.</span></p>
 </section>
 
-<section class="view" id="viewHeat">
+<section class="view panel" id="viewHeat">
+  <div class="grip"></div>
   <h1 data-i18n="heat.title">Activatie-heatmap</h1>
   <p class="sub" data-i18n="heat.sub">Welke gebieden hebben aandacht nodig?</p>
-  <div class="card" id="heatBox"><p class="hint" data-i18n="heat.loading">Statusdata laden…</p></div>
-  <div class="card" id="heatNeg" hidden>
-    <h4 style="margin:0 0 8px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
+  <div class="segs" id="heatMetric">
+    <button class="seg on" data-metric="recency" data-i18n="heat.byrecency">Laatst actief</button>
+    <button class="seg" data-metric="qso" data-i18n="heat.byqso">Aantal QSO's</button>
+  </div>
+  <div id="heatBox"><p class="hint" data-i18n="heat.loading">Statusdata laden…</p></div>
+  <div id="heatNeg" hidden>
+    <h4 style="margin:14px 0 4px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
         data-i18n="heat.neglected">Meest verwaarloosde gebieden</h4>
     <div id="negList"></div>
   </div>
@@ -390,7 +414,9 @@
   <p class="sub" data-i18n="rules.sub">WWFF wereldwijd en wat ONFF daaraan toevoegt</p>
   <div class="card"><table class="rules"><tbody id="rulesBody"></tbody></table></div>
   <div id="bandBox"></div>
-  <p class="hint" data-i18n="rules.src">Bron: WWFF Global Rules §14.7 en de ONFF-regels op onffbelgium.blogspot.com</p>
+  <p class="hint"><span style="color:var(--amber)">▌</span> <span data-i18n="rules.mkwwff">WWFF-voorkeursfrequentie</span>
+     &nbsp; <span style="color:#7c3aed">▌</span> FT8</p>
+  <p class="hint" data-i18n="rules.src">Bron: IARU Regio 1-bandplan en WWFF Global Rules §14.7. Je vergunningsklasse kan verder beperken.</p>
 </section>
 
 <nav class="nav" id="nav">
@@ -434,6 +460,13 @@ const STR = {
   'spots.noagenda':'Niets aangekondigd in deze selectie.',
   'spots.announced':'aankondigingen',
   'spots.updated':'bijgewerkt om',
+  'heat.byrecency':'Laatst actief',
+  'heat.byqso':"Aantal QSO's",
+  'heat.few':'Weinig / nooit',
+  'heat.many':'Veel QSO’s',
+  'heat.qsototal':"QSO's in de bekeken jaren",
+  'rules.mkwwff':'WWFF-voorkeursfrequentie',
+  'rules.src':'Bron: IARU Regio 1-bandplan en WWFF Global Rules §14.7. Je vergunningsklasse kan verder beperken.',
   'nav.map':'Kaart','nav.session':'Sessie','nav.heat':'Heatmap','nav.rules':'Regels',
   'sess.title':'Activatiesessie','sess.sub':'Kies eerst een gebied op de kaart',
   'sess.unknown':'Positie onbekend','sess.press':'Druk op start; Diana volgt je positie.',
@@ -450,7 +483,6 @@ const STR = {
   'rules.qso':'Minimum QSO’s','rules.dur':'Minimumduur','rules.bound':'Grens','rules.call':'Roepnaam',
   'rules.proof':'Bewijs','rules.log':'Log indienen','rules.pref':'WWFF-voorkeur',
   'rules.yourband':'jouw huidige band',
-  'rules.src':'Bron: WWFF Global Rules §14.7 en de ONFF-regels op onffbelgium.blogspot.com',
   'heat.title':'Activatie-heatmap','heat.sub':'Welke gebieden hebben aandacht nodig?',
   'heat.loading':'Statusdata laden…','heat.activated':'gebieden ooit geactiveerd',
   'heat.never':'nog nooit','heat.long':'Nooit / lang geleden','heat.recent':'Recent actief',
@@ -483,6 +515,13 @@ const STR = {
   'spots.noagenda':'Rien d’annoncé dans cette sélection.',
   'spots.announced':'annonces',
   'spots.updated':'mis à jour à',
+  'heat.byrecency':'Dernière activité',
+  'heat.byqso':'Nombre de QSO',
+  'heat.few':'Peu / jamais',
+  'heat.many':'Beaucoup de QSO',
+  'heat.qsototal':'QSO sur les années consultées',
+  'rules.mkwwff':'Fréquence préférée WWFF',
+  'rules.src':'Source : plan de bandes IARU Région 1 et WWFF Global Rules §14.7. Votre classe de licence peut restreindre davantage.',
   'nav.map':'Carte','nav.session':'Session','nav.heat':'Carte d’activité','nav.rules':'Règles',
   'sess.title':'Session d’activation','sess.sub':'Choisissez d’abord une zone sur la carte',
   'sess.unknown':'Position inconnue','sess.press':'Appuyez sur démarrer ; Diana suit votre position.',
@@ -499,7 +538,6 @@ const STR = {
   'rules.qso':'QSO minimum','rules.dur':'Durée minimale','rules.bound':'Limites','rules.call':'Indicatif',
   'rules.proof':'Preuve','rules.log':'Envoi du log','rules.pref':'Fréquence WWFF',
   'rules.yourband':'votre bande actuelle',
-  'rules.src':'Source : WWFF Global Rules §14.7 et les règles ONFF sur onffbelgium.blogspot.com',
   'heat.title':'Carte d’activité','heat.sub':'Quelles zones méritent de l’attention ?',
   'heat.loading':'Chargement des données…','heat.activated':'zones déjà activées',
   'heat.never':'jamais','heat.long':'Jamais / il y a longtemps','heat.recent':'Actif récemment',
@@ -532,6 +570,13 @@ const STR = {
   'spots.noagenda':'Nothing announced in this selection.',
   'spots.announced':'announcements',
   'spots.updated':'updated at',
+  'heat.byrecency':'Last active',
+  'heat.byqso':'QSO count',
+  'heat.few':'Few / never',
+  'heat.many':'Many QSOs',
+  'heat.qsototal':'QSOs across the years loaded',
+  'rules.mkwwff':'WWFF preferred frequency',
+  'rules.src':'Source: IARU Region 1 band plan and WWFF Global Rules §14.7. Your licence class may restrict further.',
   'nav.map':'Map','nav.session':'Session','nav.heat':'Heatmap','nav.rules':'Rules',
   'sess.title':'Activation session','sess.sub':'Pick a reference on the map first',
   'sess.unknown':'Position unknown','sess.press':'Press start; Diana follows your position.',
@@ -548,7 +593,6 @@ const STR = {
   'rules.qso':'Minimum QSOs','rules.dur':'Minimum duration','rules.bound':'Boundary','rules.call':'Callsign',
   'rules.proof':'Proof','rules.log':'Log submission','rules.pref':'WWFF preferred',
   'rules.yourband':'your current band',
-  'rules.src':'Source: WWFF Global Rules §14.7 and the ONFF rules on onffbelgium.blogspot.com',
   'heat.title':'Activation heatmap','heat.sub':'Which references need attention?',
   'heat.loading':'Loading status data…','heat.activated':'references ever activated',
   'heat.never':'never yet','heat.long':'Never / long ago','heat.recent':'Recently active',
@@ -752,7 +796,16 @@ function applyEmbed(){
 function setStyle(name){
   currentStyle = name;
   map.setStyle(STYLE_URL(name));
-  map.once('styledata', () => { paintZones(); if(showSpots) paintSpots(); applyVisibility(); reselect(); });
+  // 'styledata' vuurt vóór de stijl echt klaar is; dan doet addLayer niets en
+  // verdwijnen de gebieden. Wachten tot isStyleLoaded() waar is.
+  map.once('styledata', function waitReady(){
+    if(!map.isStyleLoaded()){ setTimeout(waitReady, 80); return; }
+    paintZones();
+    if(showSpots) paintSpots();
+    applyVisibility();
+    reselect();
+    if(heatOnMap) applyHeatPaint(true);
+  });
 }
 
 function applyVisibility(){
@@ -886,6 +939,7 @@ $('popStyle').addEventListener('click', e => {
   [...$('popStyle').children].forEach(c=>c.classList?.remove('on'));
   opt.classList.add('on');
   setStyle(opt.dataset.style);
+  toggle(null);            // stijl gekozen — paneel mag dicht
 });
 $('popLayers').addEventListener('click', e => {
   const opt = e.target.closest('.opt[data-layer]'); if(!opt) return;
@@ -1117,12 +1171,13 @@ $('nav').addEventListener('click', e=>{
     }
     startSpots(); renderSpots(); applyVisibility();
   }
-  if(b.dataset.view==='viewHeat') loadHeat();
-  if(b.dataset.view==='map' && map.getLayer('onff-fill') && !heatOnMap)
-    map.setPaintProperty('onff-fill','fill-color','#2d6a4f');
+  if(b.dataset.view==='viewHeat'){ loadHeat(); }
+  else { applyHeatPaint(false); }
   if(b.dataset.view==='viewRules') renderRules();
   if(b.dataset.view==='viewSession') renderSession();
-  map.resize();
+  // Alleen bijwerken wanneer de kaart echt van formaat verandert; een resize per
+  // klik kost een frame en levert niets op.
+  requestAnimationFrame(()=>{ map.resize(); map.triggerRepaint(); });
 });
 
 /* ================================================================== *
@@ -1254,38 +1309,59 @@ $('sessGpx').onclick = ()=>{
  * Scherm 6 — regels en bandplan
  * Frequenties uit de WWFF Global Rules §14.7 (niet 7130/14262!).
  * ================================================================== */
+/* IARU Regio 1 HF-bandplan, per mode. Niet de hele band als één blok: waar je
+   mag praten en waar niet, is precies wat je in het veld nodig hebt.
+   ft8 = de wereldwijd gebruikte FT8-frequentie; wwff = de WWFF-voorkeur. */
 const BANDS = [
-  {n:'80m', lo:3500, hi:3800,  modes:['CW','SSB','Digi'], ssb:3744, cw:3544},
-  {n:'40m', lo:7000, hi:7200,  modes:['CW','SSB','Digi'], ssb:7144, cw:7024},
-  {n:'30m', lo:10100,hi:10150, modes:['CW','Digi'],                  cw:10124},
-  {n:'20m', lo:14000,hi:14350, modes:['CW','SSB','Digi'], ssb:14244, cw:14044},
-  {n:'17m', lo:18068,hi:18168, modes:['CW','SSB','Digi'], ssb:18144, cw:18084},
-  {n:'15m', lo:21000,hi:21450, modes:['CW','SSB','Digi'], ssb:21244, cw:21044},
-  {n:'12m', lo:24890,hi:24990, modes:['CW','SSB','Digi'], ssb:24944, cw:24894},
-  {n:'10m', lo:28000,hi:29700, modes:['CW','SSB','Digi','FM'], ssb:28444, cw:28044},
+  {n:'80m', lo:3500,  hi:3800,  ft8:3573,  wwff:{ssb:3744, cw:3544},
+   seg:[['CW',3500,3570],['Digi',3570,3600],['SSB',3600,3800]]},
+  {n:'40m', lo:7000,  hi:7200,  ft8:7074,  wwff:{ssb:7144, cw:7024},
+   seg:[['CW',7000,7040],['Digi',7040,7050],['SSB',7050,7200]]},
+  {n:'30m', lo:10100, hi:10150, ft8:10136, wwff:{cw:10124},
+   seg:[['CW',10100,10130],['Digi',10130,10150]]},
+  {n:'20m', lo:14000, hi:14350, ft8:14074, wwff:{ssb:14244, cw:14044},
+   seg:[['CW',14000,14070],['Digi',14070,14099],['SSB',14101,14350]]},
+  {n:'17m', lo:18068, hi:18168, ft8:18100, wwff:{ssb:18144, cw:18084},
+   seg:[['CW',18068,18095],['Digi',18095,18109],['SSB',18111,18168]]},
+  {n:'15m', lo:21000, hi:21450, ft8:21074, wwff:{ssb:21244, cw:21044},
+   seg:[['CW',21000,21070],['Digi',21070,21110],['SSB',21151,21450]]},
+  {n:'12m', lo:24890, hi:24990, ft8:24915, wwff:{ssb:24944, cw:24894},
+   seg:[['CW',24890,24915],['Digi',24915,24929],['SSB',24931,24990]]},
+  {n:'10m', lo:28000, hi:29700, ft8:28074, wwff:{ssb:28444, cw:28044},
+   seg:[['CW',28000,28070],['Digi',28070,28190],['SSB',28225,29200],['FM',29200,29700]]},
 ];
+const SEG_COLOR = {CW:'#1b4332', Digi:'#2d6a4f', SSB:'#52b788', FM:'#a7d7bd'};
+const mhz = k => (k/1000).toFixed(3);
+
 const RULES = ['qso','dur','bound','call','proof','log'];
 function renderRules(){
   $('rulesBody').innerHTML =
     `<tr><td></td><td><b>WWFF</b> · <b>ONFF</b></td></tr>` +
     RULES.map(k=>`<tr><td>${t('rules.'+k)}</td><td>${t('rules.w.'+k)} · <b>${t('rules.o.'+k)}</b></td></tr>`).join('');
-  const cur = currentBand();
-  $('bandBox').innerHTML = BANDS.map(b=>{
-    const here_ = cur && cur.n===b.n;
-    const wwff = [b.ssb&&`SSB ${(b.ssb/1000).toFixed(3)} MHz`, b.cw&&`CW ${(b.cw/1000).toFixed(3)} MHz`]
+  $('bandBox').innerHTML = BANDS.map(b => {
+    const span = b.hi - b.lo;
+    const bar = b.seg.map(([m,lo,hi]) =>
+      `<span class="sg" style="left:${(lo-b.lo)/span*100}%;width:${(hi-lo)/span*100}%;background:${SEG_COLOR[m]}"
+             title="${m} ${mhz(lo)}–${mhz(hi)}"></span>`).join('');
+    const marks = [
+      b.wwff.ssb && `<span class="mk mkw" style="left:${(b.wwff.ssb-b.lo)/span*100}%" title="WWFF SSB"></span>`,
+      b.wwff.cw  && `<span class="mk mkw" style="left:${(b.wwff.cw-b.lo)/span*100}%" title="WWFF CW"></span>`,
+      b.ft8      && `<span class="mk ft8"  style="left:${(b.ft8-b.lo)/span*100}%" title="FT8"></span>`,
+    ].filter(Boolean).join('');
+    const rows = b.seg.map(([m,lo,hi]) =>
+      `<div class="sgrow"><span class="dot" style="background:${SEG_COLOR[m]}"></span>
+        <span class="m">${m}</span><span class="r">${mhz(lo)} – ${mhz(hi)} MHz</span></div>`).join('');
+    const wwff = [b.wwff.ssb && `SSB ${mhz(b.wwff.ssb)}`, b.wwff.cw && `CW ${mhz(b.wwff.cw)}`]
                  .filter(Boolean).join(' · ');
-    return `<div class="band${here_?' here':''}">
-      <div class="bh"><span class="bn">${b.n}</span><span class="br">${b.lo.toLocaleString('nl-BE')} – ${b.hi.toLocaleString('nl-BE')} kHz</span></div>
-      <div class="modes">${b.modes.map(m=>`<span class="mode">${m}</span>`).join('')}</div>
-      <div class="wwff">${t('rules.pref')}: ${wwff}${here_?' · '+t('rules.yourband'):''}</div>
+    return `<div class="band">
+      <div class="bh"><span class="bn">${b.n}</span><span class="br">${mhz(b.lo)} – ${mhz(b.hi)} MHz</span></div>
+      <div class="bar">${bar}${marks}</div>
+      <div class="sgrows">${rows}</div>
+      <div class="wwff">${t('rules.pref')}: ${wwff} &nbsp;·&nbsp; FT8 ${mhz(b.ft8)}</div>
     </div>`;
   }).join('');
 }
-function currentBand(){
-  // Als er een spot van jezelf actief is, markeren we die band. Nog niet gekoppeld
-  // aan een transceiver — dat kan later via CAT of via de eigen self-spot.
-  return null;
-}
+
 
 /* ================================================================== *
  * Scherm 7 — activatie-heatmap uit de ONFF-statussheet
@@ -1342,38 +1418,85 @@ async function loadHeat(){
   }
 }
 
-function paintHeat(){
-  if(!zones) return;
-  const refs = Object.keys(heat);
-  const today = new Date();
-  const years = r => (heat[r] && heat[r].date)
-    ? (today - new Date(heat[r].date))/(365.25*24*3600*1000) : 99;
-  $('heatBox').innerHTML = `
-    <div class="srow"><span class="b1"><b>${refs.length}</b> ${t('heat.activated')}</span>
-      <span class="r">${zones.features.length - refs.length} ${t('heat.never')}</span></div>
-    <div class="legend"><span>${t('heat.long')}</span><span class="ramp"></span><span>${t('heat.recent')}</span></div>`;
+let heatMetric = 'recency';
 
-  // kleur de zones op recentheid van de laatste activatie
-  const expr = ['case'];
-  const buckets = [[0.5,'#16a34a'],[1,'#84cc16'],[2,'#facc15'],[4,'#f59e0b']];
-  for(const [yr,col] of buckets){
-    const list = refs.filter(r=>years(r)<yr);
-    if(list.length){ expr.push(['in',['get','ref'],['literal',list]], col); }
-  }
-  expr.push('#dc2626');   // nooit of heel lang geleden
-  // Een 'case' met alleen een terugval is ongeldig — dan volstaat één kleur.
-  const paint = expr.length > 2 ? expr : '#dc2626';
-  if(map.getLayer('onff-fill')) map.setPaintProperty('onff-fill','fill-color',paint);
+/* Kleurschalen. Groen = goed bediend, rood = vraagt aandacht. */
+const RECENCY_BUCKETS = [[0.5,'#16a34a'],[1,'#84cc16'],[2,'#facc15'],[4,'#f59e0b']];
+const QSO_BUCKETS     = [[10000,'#16a34a'],[2000,'#84cc16'],[500,'#facc15'],[100,'#f59e0b']];
 
-  const neglected = zones.features
-    .map(f=>({ref:f.properties.ref, name:f.properties.name, y:years(f.properties.ref)}))
-    .sort((a,b)=>b.y-a.y).slice(0,12);
-  $('negList').innerHTML = neglected.map(n=>
-    `<div class="neg"><span>${n.ref} · ${n.name}</span><span class="nr">${
-      n.y>90 ? t('heat.neveryet') : `${Math.floor(n.y)} ${t('heat.yearsago')}`}</span></div>`).join('');
-  $('heatNeg').hidden = false;
-  heatOnMap = true;
+function yearsSince(ref){
+  const e = heat && heat[ref];
+  if(!e || !e.date) return 99;
+  return (Date.now() - new Date(e.date)) / (365.25*24*3600*1000);
 }
+function qsoTotal(ref){ return (heat && heat[ref] && heat[ref].qso) || 0; }
+
+/* Bouwt de kleurexpressie voor de vlakkenlaag. */
+function heatExpression(){
+  const refs = Object.keys(heat || {});
+  const expr = ['case'];
+  if(heatMetric === 'recency'){
+    for(const [yr,col] of RECENCY_BUCKETS){
+      const list = refs.filter(r => yearsSince(r) < yr);
+      if(list.length) expr.push(['in',['get','ref'],['literal',list]], col);
+    }
+  } else {
+    for(const [min,col] of QSO_BUCKETS){
+      const list = refs.filter(r => qsoTotal(r) >= min);
+      if(list.length) expr.push(['in',['get','ref'],['literal',list]], col);
+    }
+  }
+  expr.push('#dc2626');                     // nooit geactiveerd of heel weinig
+  return expr.length > 2 ? expr : '#dc2626';
+}
+
+function applyHeatPaint(on){
+  heatOnMap = !!on;
+  if(!map.getLayer('onff-fill')) return;
+  map.setPaintProperty('onff-fill','fill-color', on && heat ? heatExpression() : '#2d6a4f');
+  map.triggerRepaint();
+  map.setPaintProperty('onff-fill','fill-opacity',
+    on ? 0.75 : ['interpolate',['linear'],['zoom'],
+                 7,  ['case',['boolean',['feature-state','sel'],false],0.42,0.20],
+                 12, ['case',['boolean',['feature-state','sel'],false],0.45,0.28]]);
+}
+
+function paintHeat(){
+  if(!zones || !heat) return;
+  const refs = Object.keys(heat);
+  const known = zones.features.filter(f => heat[f.properties.ref]);
+  const totalQso = refs.reduce((a,r)=>a+qsoTotal(r),0);
+
+  $('heatBox').innerHTML = `
+    <div class="srow"><span><b>${known.length}</b> ${t('heat.activated')}</span>
+      <span class="r">${zones.features.length - known.length} ${t('heat.never')}</span></div>
+    <div class="legend"><span>${heatMetric==='recency'?t('heat.long'):t('heat.few')}</span>
+      <span class="ramp"></span>
+      <span>${heatMetric==='recency'?t('heat.recent'):t('heat.many')}</span></div>
+    ${heatMetric==='qso' ? `<p class="hint">${totalQso.toLocaleString('nl-BE')} ${t('heat.qsototal')}</p>` : ''}`;
+
+  applyHeatPaint(true);
+
+  const worst = zones.features
+    .map(f => ({ref:f.properties.ref, name:f.properties.name,
+                y:yearsSince(f.properties.ref), q:qsoTotal(f.properties.ref)}))
+    .sort((a,b) => heatMetric==='recency' ? b.y - a.y : a.q - b.q)
+    .slice(0,12);
+  $('negList').innerHTML = worst.map(n => {
+    const right = heatMetric==='recency'
+      ? (n.y > 90 ? t('heat.neveryet') : `${Math.floor(n.y)} ${t('heat.yearsago')}`)
+      : `${n.q} QSO${n.q===1?'':"'s"}`;
+    return `<div class="neg"><span>${n.ref} · ${n.name}</span><span class="nr">${right}</span></div>`;
+  }).join('');
+  $('heatNeg').hidden = false;
+}
+
+$('heatMetric').addEventListener('click', e => {
+  const b = e.target.closest('.seg[data-metric]'); if(!b) return;
+  heatMetric = b.dataset.metric;
+  [...$('heatMetric').children].forEach(c => c.classList.toggle('on', c===b));
+  paintHeat();
+});
 
 /* ---------- offline: service worker + gebied downloaden ---------- */
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
