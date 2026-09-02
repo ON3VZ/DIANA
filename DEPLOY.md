@@ -141,14 +141,47 @@ Begin niet hiermee. Begin met de vraag aan Luk.
 
 ---
 
-## 6. De allereerste keer
+## 6. Als er geen `gh-pages` verschijnt
 
-1. Repo aanmaken, alles erin, KMZ in `source/`.
-2. Eén pull request maken (bijvoorbeeld een kleine wijziging in `overrides.json`) en
+Die branch wordt door de workflow aangemaakt. Staat hij er niet, dan is de workflow niet
+gedraaid of gestrand. Loop dit af, in deze volgorde:
+
+**a. Staat de map `.github` wel in de repo?**
+Dit is verreweg de vaakste oorzaak. Windows Verkenner verbergt mappen die met een punt
+beginnen, dus wie de uitgepakte bestanden naar de GitHub-webuploader sleept, laat
+`.github/` ongemerkt achter — en dan bestaat er dus geen workflow. Kijk op github.com of
+je `.github/workflows/pages.yml` ziet staan. Zo niet: maak het bestand aan met
+**Add file → Create new file**, typ als naam `.github/workflows/pages.yml` (GitHub maakt
+de mappen vanzelf) en plak de inhoud erin.
+
+**b. Staat er iets in het tabblad Actions?**
+- *Geen enkele run* → de workflow staat er niet, of hij zit op een andere branch dan
+  `main`. Kijk hoe je hoofdbranch heet.
+- *Rode run* → open hem en lees de gefaalde stap.
+
+**c. Rood bij "Publiceren", met 403 of "permission denied"?**
+Dan staat de tokenrechten-instelling nog op alleen-lezen. Settings → Actions → General →
+**Workflow permissions** → *Read and write permissions* → Save. Draai daarna de workflow
+opnieuw met **Run workflow** in het Actions-tabblad.
+
+**d. Nog steeds niets?**
+De workflow heeft ook een handmatige knop. Actions → "Publiceren naar GitHub Pages" →
+**Run workflow**. Dat maakt `gh-pages` aan zonder dat je iets hoeft te pushen.
+
+Pas als `gh-pages` bestaat, verschijnt hij in het menu bij Settings → Pages.
+
+---
+
+## 7. De allereerste keer
+
+1. **Eerst** Settings → Actions → General → Workflow permissions op *Read and write*.
+2. Repo aanmaken, alles erin, KMZ in `source/` — en controleer dat `.github/` mee is.
+3. Actions → "Publiceren naar GitHub Pages" → **Run workflow**. Nu bestaat `gh-pages`.
+4. Settings → Pages → branch `gh-pages`, map `/ (root)` → Save.
+5. Eén pull request maken (bijvoorbeeld een kleine wijziging in `overrides.json`) en
    controleren dat je twee reacties krijgt: het rapport en de preview-link.
-3. Mergen, dan Pages → branch `gh-pages` instellen.
-4. **De live site openen en kijken of de spots en de heatmap laden.** Dat beantwoordt
+6. **De live site openen en kijken of de spots en de heatmap laden.** Dat beantwoordt
    in tien seconden de laatste open vraag uit het plan: hebben we ooit een proxy nodig,
    of niet?
 
-Punt 4 is meteen de goedkoopste test in het hele project.
+Die laatste stap is meteen de goedkoopste test in het hele project.
