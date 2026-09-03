@@ -102,9 +102,10 @@ including your own position. Switch it off from the map's layers button, or
 force it on from a URL with `?spots=1`.
 
 Also on by default: **other WWFF areas**, every active WWFF reference
-worldwide that isn't in Belgium (~64,700 of them), shown as small clustered
+worldwide that isn't in Belgium (~64,600 of them), shown as blue clustered
 dots that split apart as you zoom in — tap a cluster to zoom into it, tap a
-single dot for its reference and name. These are always shown as points,
+single dot for its reference and name. The dots grow as you zoom in, and from
+zoom 11 each one is labelled with its reference. These are always shown as points,
 never as an outlined area — Diana only has real boundaries for ONFF. Switch
 the layer off from the layers button, or narrow it to one country from
 **Settings → Other WWFF areas** (see below).
