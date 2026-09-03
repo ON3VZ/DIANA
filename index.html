@@ -141,6 +141,8 @@
     color:var(--ink-2);cursor:pointer;
   }
   .seg.on{background:var(--green);color:#fff;font-weight:600}
+  .langs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--paper);padding:3px;border-radius:10px}
+  .langs .seg{padding:8px 0}
   .spotlist{max-height:min(50vh,380px);overflow:auto;margin:0 -4px}
   .spot{
     display:flex;gap:10px;align-items:center;padding:9px 8px;border-radius:10px;cursor:pointer;
@@ -181,7 +183,7 @@
     background:var(--card);border-top:1px solid var(--line);
     padding:6px 4px calc(6px + env(safe-area-inset-bottom));
   }
-  .nav button{
+  .nav button{font-size:10.5px;
     flex:1;border:0;background:none;cursor:pointer;padding:6px 2px;border-radius:10px;
     display:flex;flex-direction:column;align-items:center;gap:3px;
     font:inherit;font-size:11px;color:var(--ink-3);
@@ -206,6 +208,8 @@
     padding:8px 16px 18px;
   }
   .view.panel h1{font-size:19px}
+  /* Wijkt zodra het gebiedspaneel opengaat — anders staan ze op een gsm over elkaar. */
+  .view.panel.tucked{display:none}
   .view.panel .sub{margin-bottom:10px}
   .view h1{font-size:22px;letter-spacing:-.02em;margin:4px 0 2px}
   .view .sub{color:var(--ink-3);font-size:13.5px;margin:0 0 16px}
@@ -218,6 +222,39 @@
   .btn.ghost{background:var(--paper);color:var(--ink-2);border:1px solid var(--line)}
   .btn[disabled]{opacity:.45;cursor:not-allowed}
   .btn + .btn{margin-top:8px}
+
+  /* beheer */
+  .ch{margin:0 0 10px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13.5px;margin:2px 0 8px;cursor:pointer}
+  .code{background:#12291d;color:#d7e6dc;border-radius:10px;padding:11px 12px;font:12px/1.5 ui-monospace,
+        SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-all;margin:4px 0 10px}
+  .steps{margin:6px 0 12px;font-size:13px}
+  .step{display:flex;gap:9px;align-items:baseline;padding:3px 0;color:var(--ink-3)}
+  .step .mk{width:16px;flex:0 0 auto;text-align:center}
+  .step.done{color:var(--green-2)} .step.now{color:var(--ink);font-weight:600}
+  .step.err{color:#b91c1c}
+  .nav button[data-view="viewAdmin"]{display:none}
+  body.admin .nav button[data-view="viewAdmin"]{display:flex}
+
+  /* zelfmelden */
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fld{display:block;margin-bottom:10px}
+  .fld > span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650;margin-bottom:4px}
+  .fld input, .fld select{
+    width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;
+    font:inherit;color:inherit;background:var(--paper);
+  }
+  .fld input:focus, .fld select:focus{outline:2px solid var(--leaf);outline-offset:1px;background:#fff}
+  .fld input.bad{border-color:#dc2626;background:#fef2f2}
+  .fld input.good{border-color:var(--leaf)}
+  .fb{font-size:12.5px;margin:-4px 0 10px;min-height:16px;color:var(--ink-3)}
+  .fb.bad{color:#b91c1c}
+  .fb.good{color:var(--green-2)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 11px;
+        font:inherit;font-size:12.5px;color:var(--ink-2);cursor:pointer}
+  .chip:hover{border-color:var(--leaf);color:var(--green)}
+  .warn{font-size:12.5px;color:#92400e;background:#fdf6e3;border-radius:10px;padding:10px 12px;margin:12px 0 0}
 
   /* sessie */
   .banner{border-radius:12px;padding:12px 14px;display:flex;gap:11px;align-items:center;margin-bottom:12px}
@@ -310,7 +347,7 @@
 <div class="counts" id="counts">data laden…</div>
 
 <div class="pop" id="popStyle">
-  <h4>Kaartstijl</h4>
+  <h4 data-i18n="lay.style">Kaartstijl</h4>
   <div class="opt on" data-style="liberty">Liberty</div>
   <div class="opt" data-style="positron">Positron</div>
   <div class="opt" data-style="bright">Bright</div>
@@ -318,23 +355,28 @@
 </div>
 
 <div class="pop" id="popLayers">
-  <h4>Lagen</h4>
-  <div class="opt on" data-layer="onff">ONFF-gebieden <span class="sw on"></span></div>
-  <div class="opt on" data-layer="labels">Referentienummers <span class="sw on"></span></div>
-  <div class="opt" data-layer="spots">Spots &amp; agenda <span class="sw"></span></div>
-  <div class="opt disabled">BCA, BLHA… <span class="sw"></span></div>
-  <p class="hint">Spots komen live van WWFF Spotline en verversen elke 30 s.</p>
-  <button class="btn ghost" id="btnOffline" style="margin-top:6px;font-size:13.5px;padding:10px">⤓ Dit gebied offline bewaren</button>
-  <h4 style="margin-top:12px">Taal</h4>
-  <div class="segs" id="langPick">
+  <h4 data-i18n="lay.title">Lagen</h4>
+  <div class="opt on" data-layer="onff"><span data-i18n="lay.onff">ONFF-gebieden</span> <span class="sw on"></span></div>
+  <div class="opt on" data-layer="labels"><span data-i18n="lay.labels">Referentienummers</span> <span class="sw on"></span></div>
+  <div class="opt" data-layer="spots"><span data-i18n="lay.spots">Spots &amp; agenda</span> <span class="sw"></span></div>
+  <div class="opt disabled"><span data-i18n="lay.other">BCA, BLHA…</span> <span class="sw"></span></div>
+  <p class="hint" data-i18n="lay.spothint">Spots komen live van WWFF Spotline en verversen elke 30 s.</p>
+  <button class="btn ghost" id="btnFit" style="margin-top:6px;font-size:13.5px;padding:10px" data-i18n="lay.fit">⤢ Alle spots in beeld</button>
+  <button class="btn ghost" id="btnOffline" style="margin-top:6px;font-size:13.5px;padding:10px" data-i18n="lay.offline">⤓ Dit gebied offline bewaren</button>
+  <h4 style="margin-top:12px" data-i18n="lay.lang">Taal</h4>
+  <div class="langs" id="langPick">
+    <button class="seg" data-lang="en">EN</button>
     <button class="seg" data-lang="nl">NL</button>
     <button class="seg" data-lang="fr">FR</button>
-    <button class="seg" data-lang="en">EN</button>
+    <button class="seg" data-lang="de">DE</button>
+    <button class="seg" data-lang="da">DA</button>
+    <button class="seg" data-lang="it">IT</button>
+    <button class="seg" data-lang="es">ES</button>
   </div>
 </div>
 
 <div class="search" id="search">
-  <input id="q" type="search" placeholder="Zoek op naam of ONFF-nummer…" autocomplete="off">
+  <input id="q" type="search" placeholder="" data-i18n-ph="search.ph" autocomplete="off">
   <div class="results" id="results"></div>
 </div>
 
@@ -356,6 +398,7 @@
   <h2 id="zoneName">—</h2>
   <div class="facts" id="facts"></div>
   <p class="note" id="zoneNote"></p>
+  <button class="btn amber" id="zoneSpot" style="margin-top:12px" data-i18n="zone.spotme">Meld jezelf actief</button>
 </div>
 
 <section class="view" id="viewSpots">
@@ -371,6 +414,127 @@
   </div>
   <div class="card"><div class="spotlist" id="spotList"><p class="hint" data-i18n="spots.loading">laden…</p></div></div>
   <p class="hint" id="spotMeta"></p>
+</section>
+
+<section class="view" id="viewAdmin">
+  <h1 data-i18n="adm.title">Beheer</h1>
+  <p class="sub" data-i18n="adm.sub">Nieuwe bronbestanden naar de repository sturen</p>
+
+  <div class="card">
+    <h4 class="ch" data-i18n="adm.repo">Repository</h4>
+    <div class="fgrid">
+      <label class="fld"><span data-i18n="adm.owner">Eigenaar / repo</span>
+        <input id="admRepo" type="text" autocomplete="off" spellcheck="false" placeholder="ON3VZ/DIANA"></label>
+      <label class="fld"><span data-i18n="adm.branch">Hoofdbranch</span>
+        <input id="admBranch" type="text" autocomplete="off" spellcheck="false" placeholder="main"></label>
+    </div>
+    <label class="fld"><span data-i18n="adm.token">Toegangstoken</span>
+      <input id="admToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+    <label class="chk"><input type="checkbox" id="admRemember"> <span data-i18n="adm.remember">Token op dit toestel onthouden</span></label>
+    <p class="warn" data-i18n="adm.tokenwarn">Een token in de browser is leesbaar voor iedereen die aan dit toestel kan. Gebruik een fine-grained token dat alleen déze repository mag, alleen inhoud en pull requests, met een korte vervaldatum. Niet doen op een gedeelde computer.</p>
+    <button class="btn ghost" id="admTest" data-i18n="adm.test">Verbinding testen</button>
+    <div class="fb" id="admFb"></div>
+  </div>
+
+  <div class="card">
+    <h4 class="ch" data-i18n="adm.upload">Bestand uploaden</h4>
+    <label class="fld"><span data-i18n="adm.target">Doelmap in de repo</span>
+      <input id="admPath" type="text" autocomplete="off" spellcheck="false" placeholder="source/"></label>
+    <input type="file" id="admFile" style="margin:6px 0 10px">
+    <div class="steps" id="admSteps" hidden></div>
+    <button class="btn amber" id="admSend" disabled data-i18n="adm.send">Uploaden en pull request openen</button>
+    <p class="hint" data-i18n="adm.uploadhint">Het bestand komt op een nieuwe branch en wordt een pull request. De workflows zetten het om en tonen het verschillenrapport en een preview. Publiceren blijft jouw klik.</p>
+  </div>
+
+  <div class="card">
+    <h4 class="ch" data-i18n="adm.embed">Insluiten op een website</h4>
+    <div class="fgrid">
+      <label class="fld"><span data-i18n="adm.embprov">Provincie / regio</span>
+        <input id="embProv" type="text" autocomplete="off" placeholder="antwerpen"></label>
+      <label class="fld"><span data-i18n="adm.emblang">Taal</span>
+        <input id="embLang" type="text" autocomplete="off" placeholder="nl"></label>
+    </div>
+    <label class="chk"><input type="checkbox" id="embSpots" checked> <span data-i18n="adm.embspots">Spots meteen aan</span></label>
+    <pre class="code" id="embCode"></pre>
+    <button class="btn ghost" id="embCopy" data-i18n="adm.copy">Kopiëren</button>
+  </div>
+</section>
+
+<section class="view" id="viewSet">
+  <h1 data-i18n="set.title">Instellingen</h1>
+  <p class="sub" data-i18n="set.sub">Blijft op dit toestel — niets gaat naar een server</p>
+
+  <div class="card">
+    <h4 style="margin:0 0 10px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
+        data-i18n="set.you">Jouw station</h4>
+    <div class="fgrid">
+      <label class="fld"><span data-i18n="set.call">Roepnaam</span>
+        <input id="setCall" type="text" autocomplete="off" spellcheck="false" placeholder="ON3VZ"></label>
+      <label class="fld"><span data-i18n="set.portable">Portable roepnaam</span>
+        <input id="setCallP" type="text" autocomplete="off" spellcheck="false" placeholder="ON3VZ/P"></label>
+    </div>
+    <label class="fld"><span data-i18n="set.grid">Maidenhead-locator</span>
+      <input id="setGrid" type="text" autocomplete="off" spellcheck="false" placeholder="JO21EE" maxlength="8"></label>
+    <div class="fb" id="fbGrid"></div>
+    <button class="btn ghost" id="setGridGps" style="font-size:13.5px;padding:10px" data-i18n="set.gridfrom">Uit GPS overnemen</button>
+  </div>
+
+  <div class="card">
+    <h4 style="margin:0 0 10px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
+        data-i18n="set.startview">Startweergave van de kaart</h4>
+    <div class="segs" id="setView">
+      <button class="seg on" data-view2="grid" data-i18n="set.fromgrid">Bij je locator</button>
+      <button class="seg" data-view2="call" data-i18n="set.fromcall">Bij je land</button>
+      <button class="seg" data-view2="all" data-i18n="set.wholemap">Alles</button>
+    </div>
+  </div>
+
+  <p class="privacy">🔒 <span data-i18n="set.localonly">Alles wat je hier invult blijft in de browser van dít toestel.</span></p>
+</section>
+
+<section class="view" id="viewSelf">
+  <h1 data-i18n="self.title">Meld jezelf actief</h1>
+  <p class="sub" data-i18n="self.sub">Verstuurt een spot via WWFF Spotline</p>
+
+  <div class="banner in" id="selfCtx" hidden>
+    <span class="dot" style="width:11px;height:11px;border-radius:50%;background:currentColor"></span>
+    <span><div class="b1" id="selfCtx1"></div><div class="b2" data-i18n="self.prefilled">voorgevuld vanaf het geselecteerde gebied</div></span>
+  </div>
+
+  <div class="card">
+    <div class="fgrid">
+      <label class="fld"><span data-i18n="self.activator">Roepteken (activator)</span>
+        <input id="spActivator" type="text" autocomplete="off" spellcheck="false" placeholder="ON3VZ/P"></label>
+      <label class="fld"><span data-i18n="self.spotter">Spotter</span>
+        <input id="spSpotter" type="text" autocomplete="off" spellcheck="false" placeholder="ON3VZ"></label>
+    </div>
+    <label class="fld"><span data-i18n="self.ref">WWFF-referentie</span>
+      <input id="spReference" type="text" autocomplete="off" spellcheck="false" placeholder="ONFF-0104"></label>
+    <div class="fb" id="fbReference"></div>
+    <div class="fgrid">
+      <label class="fld"><span data-i18n="self.freq">Frequentie (kHz)</span>
+        <input id="spFreq" type="text" inputmode="decimal" autocomplete="off" placeholder="14244.0"></label>
+      <label class="fld"><span data-i18n="self.mode">Mode</span>
+        <select id="spMode">
+          <option value="">—</option>
+          <option>SSB</option><option>CW</option><option>FT8</option><option>FT4</option>
+          <option>RTTY</option><option>PSK</option><option>FM</option><option>AM</option><option>Other</option>
+        </select></label>
+    </div>
+    <div class="fb" id="fbFreq"></div>
+    <label class="fld"><span data-i18n="self.remarks">Opmerking (optioneel)</span>
+      <input id="spRemarks" type="text" maxlength="100" placeholder="QRV tot 16u"></label>
+    <div class="fb"><span id="spCount">0/100</span></div>
+    <div class="chips">
+      <button type="button" class="chip" data-add="5W QRP">+ 5W QRP</button>
+      <button type="button" class="chip" data-add="EFHW">+ EFHW</button>
+      <button type="button" class="chip" data-add="QSY soon">+ QSY soon</button>
+    </div>
+    <p class="warn" data-i18n="self.warn">Geen bedankjes of bandverzoeken hier. Elke spot gaat naar het DX-cluster; opmerkingen die daar niet horen zijn ruis. Spotline filtert bovendien op ongepaste taal.</p>
+  </div>
+
+  <button class="btn amber" id="spSend" data-i18n="self.send">Spot versturen</button>
+  <p class="hint" data-i18n="self.newtab">Opent Spotline in een nieuw tabblad, zodat je hun eigen bevestiging ziet.</p>
 </section>
 
 <section class="view" id="viewSession">
@@ -422,6 +586,9 @@
 <nav class="nav" id="nav">
   <button class="on" data-view="map"><span class="ic">◈</span><span data-i18n="nav.map">Kaart</span></button>
   <button data-view="viewSpots"><span class="ic">((·))</span><span data-i18n="nav.spots">Spots</span></button>
+  <button data-view="viewSelf"><span class="ic">✚</span><span data-i18n="nav.self">Meld</span></button>
+  <button data-view="viewSet"><span class="ic">⚙</span><span data-i18n="nav.settings">Instellingen</span></button>
+  <button data-view="viewAdmin"><span class="ic">⛭</span><span data-i18n="nav.admin">Beheer</span></button>
   <button data-view="viewSession"><span class="ic">◉</span><span data-i18n="nav.session">Sessie</span></button>
   <button data-view="viewHeat"><span class="ic">▦</span><span data-i18n="nav.heat">Heatmap</span></button>
   <button data-view="viewRules"><span class="ic">☰</span><span data-i18n="nav.rules">Regels</span></button>
@@ -447,179 +614,1484 @@ const $ = id => document.getElementById(id);
  * officieel en horen zo in het log.
  * ================================================================== */
 const STR = {
- nl:{
-  'nav.spots':'Spots',
-  'spots.title':'Spots & agenda',
-  'spots.sub':'Wie is er nu actief, en wie kondigt iets aan?',
-  'spots.tabnow':'Nu actief',
-  'spots.tabagenda':'Agenda',
-  'spots.world':'Wereldwijd',
-  'spots.loading':'laden…',
-  'spots.now':'bezig',
-  'spots.until':'tot',
-  'spots.noagenda':'Niets aangekondigd in deze selectie.',
-  'spots.announced':'aankondigingen',
-  'spots.updated':'bijgewerkt om',
-  'heat.byrecency':'Laatst actief',
-  'heat.byqso':"Aantal QSO's",
-  'heat.few':'Weinig / nooit',
-  'heat.many':'Veel QSO’s',
-  'heat.qsototal':"QSO's in de bekeken jaren",
-  'rules.mkwwff':'WWFF-voorkeursfrequentie',
-  'rules.src':'Bron: IARU Regio 1-bandplan en WWFF Global Rules §14.7. Je vergunningsklasse kan verder beperken.',
-  'nav.map':'Kaart','nav.session':'Sessie','nav.heat':'Heatmap','nav.rules':'Regels',
-  'sess.title':'Activatiesessie','sess.sub':'Kies eerst een gebied op de kaart',
-  'sess.unknown':'Positie onbekend','sess.press':'Druk op start; Diana volgt je positie.',
-  'sess.inside':'Binnen het gebied','sess.outside':'Buiten het gebied',
-  'sess.pos':'Je positie valt binnen','sess.outsidesub':'Je positie valt buiten de referentiegrens.',
-  'sess.rec':'Opname actief','sess.notstarted':'Nog niet gestart','sess.points':'punten gelogd',
-  'sess.started':'Gestart om','sess.oftime':'van de tijd binnen het gebied',
-  'sess.need60':'60 min nog niet gehaald','sess.minleft':'min te gaan','sess.ok60':'60 min gehaald',
-  'sess.start':'Start activatie','sess.restart':'Nieuwe activatie','sess.stop':'Stop & genereer bewijs',
-  'sess.gpx':'Download GPX + samenvatting','sess.nopoints':'Er zijn geen meetpunten gelogd.',
-  'sess.pickfirst':'Kies eerst een gebied op de kaart.',
-  'sess.privacy':'Je track blijft op dit toestel. Er gaat niets naar een server tot je zelf exporteert.',
-  'rules.title':'Regels & bandplan','rules.sub':'WWFF wereldwijd en wat ONFF daaraan toevoegt',
-  'rules.qso':'Minimum QSO’s','rules.dur':'Minimumduur','rules.bound':'Grens','rules.call':'Roepnaam',
-  'rules.proof':'Bewijs','rules.log':'Log indienen','rules.pref':'WWFF-voorkeur',
-  'rules.yourband':'jouw huidige band',
-  'heat.title':'Activatie-heatmap','heat.sub':'Welke gebieden hebben aandacht nodig?',
-  'heat.loading':'Statusdata laden…','heat.activated':'gebieden ooit geactiveerd',
-  'heat.never':'nog nooit','heat.long':'Nooit / lang geleden','heat.recent':'Recent actief',
-  'heat.neglected':'Meest verwaarloosde gebieden','heat.neveryet':'nooit geactiveerd','heat.yearsago':'jaar geleden',
-  'heat.cors':'De statussheet laat geen rechtstreekse verbinding toe (CORS). Hiervoor is de Worker uit het plan nodig.',
-  'rules.w.qso':'44 (club 200)',
-'rules.w.dur':'—',
-'rules.w.bound':'alle apparatuur binnen de grens',
-'rules.w.call':'—',
-'rules.w.proof':'—',
-'rules.w.log':'—',
-'rules.o.qso':'44, behalve QRP',
-'rules.o.dur':'60 min vanaf de eerste QSO',
-'rules.o.bound':'idem',
-'rules.o.call':'/p of /m voor de jaarranking',
-'rules.o.proof':'2 foto’s (max 600 px) of 1 geotagde foto',
-'rules.o.log':'ADIF naar onfflogapproval@gmail.com',
-  'heat.fail':'Statusdata ophalen mislukt:'
+ "nl": {
+  "lay.fit": "⤢ Alle spots in beeld",
+  "spots.unplaced": "zonder gekende locatie",
+  "nav.admin": "Beheer",
+  "adm.title": "Beheer",
+  "adm.sub": "Nieuwe bronbestanden naar de repository sturen",
+  "adm.repo": "Repository",
+  "adm.owner": "Eigenaar / repo",
+  "adm.branch": "Hoofdbranch",
+  "adm.token": "Toegangstoken",
+  "adm.remember": "Token op dit toestel onthouden",
+  "adm.tokenwarn": "Een token in de browser is leesbaar voor iedereen die aan dit toestel kan. Gebruik een fine-grained token dat alleen déze repository mag, alleen inhoud en pull requests, met een korte vervaldatum. Niet doen op een gedeelde computer.",
+  "adm.test": "Verbinding testen",
+  "adm.testing": "verbinden…",
+  "adm.needboth": "Vul eerst de repository en het token in",
+  "adm.noperm": "Dit token mag niet schrijven in deze repository",
+  "adm.upload": "Bestand uploaden",
+  "adm.target": "Doelmap in de repo",
+  "adm.send": "Uploaden en pull request openen",
+  "adm.uploadhint": "Het bestand komt op een nieuwe branch en wordt een pull request. De workflows zetten het om en tonen het verschillenrapport en een preview. Publiceren blijft jouw klik.",
+  "adm.s1": "Basisbranch ophalen",
+  "adm.s2": "Bestand inlezen",
+  "adm.s3": "Bestand naar GitHub sturen",
+  "adm.s4": "Boomstructuur bijwerken",
+  "adm.s5": "Commit maken",
+  "adm.s6": "Branch aanmaken",
+  "adm.s7": "Pull request openen",
+  "adm.openpr": "Pull request openen",
+  "adm.done": "Pull request aangemaakt",
+  "adm.failed": "Uploaden mislukt",
+  "adm.unlocked": "Beheer staat aan",
+  "adm.embed": "Insluiten op een website",
+  "adm.embprov": "Provincie / regio",
+  "adm.emblang": "Taal",
+  "adm.embspots": "Spots meteen aan",
+  "adm.copy": "Kopiëren",
+  "adm.copied": "Gekopieerd",
+  "adm.copyfail": "Kopiëren lukte niet",
+  "nav.map": "Kaart",
+  "nav.spots": "Spots",
+  "nav.self": "Meld",
+  "nav.session": "Sessie",
+  "nav.heat": "Heatmap",
+  "nav.rules": "Regels",
+  "nav.settings": "Instellingen",
+  "map.areas": "ONFF-gebieden",
+  "map.datafail": "Gebiedsdata kon niet geladen worden",
+  "search.ph": "Zoek op naam of nummer…",
+  "search.none": "Niets gevonden",
+  "lay.title": "Lagen",
+  "lay.style": "Kaartstijl",
+  "lay.onff": "Natuurgebieden",
+  "lay.labels": "Referentienummers",
+  "lay.spots": "Spots & agenda",
+  "lay.other": "BCA, BLHA…",
+  "lay.lang": "Taal",
+  "lay.offline": "⤓ Dit gebied offline bewaren",
+  "lay.spothint": "Spots komen live van WWFF Spotline en verversen elke 30 s.",
+  "zone.area": "Oppervlakte",
+  "zone.manager": "Beheerder",
+  "zone.desig": "Aanduiding",
+  "zone.iucn": "IUCN-categorie",
+  "zone.reg": "Registratienummer",
+  "zone.since": "Aangeduid sinds",
+  "zone.parts": "Percelen",
+  "zone.partsnote": "Bestaat uit {n} losse percelen. Je moet met je volledige station binnen één ervan staan.",
+  "zone.overlap": "Dit punt ligt ook in {refs} — je staat dan in meerdere referenties tegelijk.",
+  "zone.spotme": "Meld jezelf actief",
+  "gps.none": "Geen GPS beschikbaar",
+  "gps.nonesub": "Deze browser deelt geen locatie.",
+  "gps.searching": "Locatie zoeken…",
+  "gps.failed": "Locatie niet gelukt",
+  "gps.inone": "Je staat in het gebied",
+  "gps.inmany": "Je staat in {n} gebieden",
+  "gps.toedge": "{d} m tot de dichtstbijzijnde grens.",
+  "gps.nearedge": "Vlak bij de grens van {ref}",
+  "gps.nearedgesub": "±{d} m van de rand, GPS-nauwkeurigheid ±{a} m — controleer visueel.",
+  "gps.outside": "Je staat buiten een gebied",
+  "gps.nearest": "Dichtstbij",
+  "spots.title": "Spots & agenda",
+  "spots.sub": "Wie is er nu actief, en wie kondigt iets aan?",
+  "spots.tabnow": "Nu actief",
+  "spots.tabagenda": "Agenda",
+  "spots.world": "Wereldwijd",
+  "spots.loading": "laden…",
+  "spots.none": "Geen actieve spots in deze selectie.",
+  "spots.noagenda": "Niets aangekondigd in deze selectie.",
+  "spots.now": "bezig",
+  "spots.until": "tot",
+  "spots.announced": "aankondigingen",
+  "spots.updated": "bijgewerkt om",
+  "spot.freqmode": "Frequentie / mode",
+  "spot.area": "Gebied",
+  "spot.locthere": "Locator daar",
+  "spot.locyou": "Jouw locator",
+  "spot.remark": "Opmerking",
+  "spot.fromyou": "richting vanaf jouw locatie",
+  "spot.justnow": "zopas gespot",
+  "spot.minago": "{n} min geleden gespot",
+  "spot.nofix": "Druk op ◎ om je locatie te bepalen; dan verschijnt hier richting en afstand.",
+  "self.title": "Meld jezelf actief",
+  "self.sub": "Verstuurt een spot via WWFF Spotline",
+  "self.prefilled": "voorgevuld vanaf het geselecteerde gebied",
+  "self.activator": "Roepteken (activator)",
+  "self.spotter": "Spotter",
+  "self.ref": "WWFF-referentie",
+  "self.freq": "Frequentie (kHz)",
+  "self.mode": "Mode",
+  "self.remarks": "Opmerking (optioneel)",
+  "self.send": "Spot versturen",
+  "self.newtab": "Opent Spotline in een nieuw tabblad, zodat je hun eigen bevestiging ziet.",
+  "self.warn": "Geen bedankjes of bandverzoeken hier. Elke spot gaat naar het DX-cluster; wat daar niet hoort is ruis. Spotline filtert bovendien op ongepaste taal.",
+  "self.reftooshort": "minstens 7 tekens",
+  "self.refchecking": "referentie controleren…",
+  "self.refinactive": "✗ referentie is niet actief",
+  "self.refunknown": "✗ referentie niet gevonden",
+  "self.refnocheck": "kon niet gecontroleerd worden — Spotline kijkt zelf ook",
+  "self.freqrange": "moet tussen 135,7 en 7.500.000.000 kHz liggen",
+  "self.segment": "segment volgens het bandplan",
+  "self.sent": "Spot verstuurd",
+  "sess.title": "Activatiesessie",
+  "sess.sub": "Kies eerst een gebied op de kaart",
+  "sess.unknown": "Positie onbekend",
+  "sess.press": "Druk op start; Diana volgt je positie.",
+  "sess.inside": "Binnen het gebied",
+  "sess.outside": "Buiten het gebied",
+  "sess.pos": "Je positie valt binnen",
+  "sess.outsidesub": "Je positie valt buiten de referentiegrens.",
+  "sess.rec": "Opname actief",
+  "sess.notstarted": "Nog niet gestart",
+  "sess.points": "punten gelogd",
+  "sess.started": "Gestart om",
+  "sess.oftime": "van de tijd binnen het gebied",
+  "sess.need60": "60 min nog niet gehaald",
+  "sess.minleft": "min te gaan",
+  "sess.ok60": "60 min gehaald",
+  "sess.start": "Start activatie",
+  "sess.restart": "Nieuwe activatie",
+  "sess.stop": "Stop & genereer bewijs",
+  "sess.gpx": "Download GPX + samenvatting",
+  "sess.nopoints": "Er zijn geen meetpunten gelogd.",
+  "sess.pickfirst": "Kies eerst een gebied op de kaart.",
+  "sess.privacy": "Je track blijft op dit toestel. Er gaat niets naar een server tot je zelf exporteert.",
+  "heat.title": "Activatie-heatmap",
+  "heat.sub": "Welke gebieden hebben aandacht nodig?",
+  "heat.byrecency": "Laatst actief",
+  "heat.byqso": "Aantal QSO's",
+  "heat.loading": "Statusdata laden…",
+  "heat.activated": "gebieden ooit geactiveerd",
+  "heat.never": "nog nooit",
+  "heat.long": "Nooit / lang geleden",
+  "heat.recent": "Recent actief",
+  "heat.few": "Weinig / nooit",
+  "heat.many": "Veel QSO's",
+  "heat.qsototal": "QSO's in de bekeken jaren",
+  "heat.neglected": "Meest verwaarloosde gebieden",
+  "heat.neveryet": "nooit geactiveerd",
+  "heat.yearsago": "jaar geleden",
+  "heat.cors": "De statussheet laat geen rechtstreekse verbinding toe (CORS).",
+  "heat.fail": "Statusdata ophalen mislukt:",
+  "rules.title": "Regels & bandplan",
+  "rules.sub": "WWFF wereldwijd en wat ONFF daaraan toevoegt",
+  "rules.qso": "Minimum QSO's",
+  "rules.dur": "Minimumduur",
+  "rules.bound": "Grens",
+  "rules.call": "Roepnaam",
+  "rules.proof": "Bewijs",
+  "rules.log": "Log indienen",
+  "rules.pref": "WWFF-voorkeur",
+  "rules.mkwwff": "WWFF-voorkeursfrequentie",
+  "rules.src": "Bron: IARU Regio 1-bandplan en WWFF Global Rules §14.7. Je vergunningsklasse kan verder beperken.",
+  "off.downloading": "Gebied downloaden…",
+  "off.tiles": "tegels",
+  "off.tilesoffline": "tegels beschikbaar zonder netwerk.",
+  "off.saved": "Gebied opgeslagen",
+  "off.cannot": "Offline opslaan kan hier niet",
+  "off.cannotsub": "Dat werkt pas wanneer Diana van een webadres draait.",
+  "off.zoomin": "Zoom eerst wat in",
+  "off.zoominsub": "Het huidige venster is te groot om offline te bewaren.",
+  "set.title": "Instellingen",
+  "set.sub": "Blijft op dit toestel — niets gaat naar een server",
+  "set.you": "Jouw station",
+  "set.call": "Roepnaam",
+  "set.portable": "Portable roepnaam",
+  "set.grid": "Maidenhead-locator",
+  "set.gridfrom": "Uit GPS overnemen",
+  "set.gridbad": "Geen geldige locator (bv. JO21EE)",
+  "set.startview": "Startweergave van de kaart",
+  "set.fromgrid": "Bij je locator",
+  "set.fromcall": "Bij je land (uit de roepnaam)",
+  "set.wholemap": "Alles tonen",
+  "set.saved": "Bewaard op dit toestel",
+  "set.localonly": "Alles wat je hier invult blijft in de browser van dít toestel. Gebruik je Diana ook op een ander toestel, dan moet je het daar opnieuw invullen.",
+  "rules.w.qso": "44 (club 200)",
+  "rules.w.dur": "—",
+  "rules.w.bound": "alle apparatuur binnen de grens",
+  "rules.w.call": "—",
+  "rules.w.proof": "—",
+  "rules.w.log": "—",
+  "rules.o.qso": "44, behalve QRP",
+  "rules.o.dur": "60 min vanaf de eerste QSO",
+  "rules.o.bound": "idem",
+  "rules.o.call": "/p of /m voor de jaarranking",
+  "rules.o.proof": "2 foto’s (max 600 px) of 1 geotagde foto",
+  "rules.o.log": "ADIF naar onfflogapproval@gmail.com"
  },
- fr:{
-  'nav.spots':'Spots',
-  'spots.title':'Spots & agenda',
-  'spots.sub':'Qui est actif maintenant, qui annonce quoi ?',
-  'spots.tabnow':'En cours',
-  'spots.tabagenda':'Agenda',
-  'spots.world':'Mondial',
-  'spots.loading':'chargement…',
-  'spots.now':'en cours',
-  'spots.until':'jusqu’à',
-  'spots.noagenda':'Rien d’annoncé dans cette sélection.',
-  'spots.announced':'annonces',
-  'spots.updated':'mis à jour à',
-  'heat.byrecency':'Dernière activité',
-  'heat.byqso':'Nombre de QSO',
-  'heat.few':'Peu / jamais',
-  'heat.many':'Beaucoup de QSO',
-  'heat.qsototal':'QSO sur les années consultées',
-  'rules.mkwwff':'Fréquence préférée WWFF',
-  'rules.src':'Source : plan de bandes IARU Région 1 et WWFF Global Rules §14.7. Votre classe de licence peut restreindre davantage.',
-  'nav.map':'Carte','nav.session':'Session','nav.heat':'Carte d’activité','nav.rules':'Règles',
-  'sess.title':'Session d’activation','sess.sub':'Choisissez d’abord une zone sur la carte',
-  'sess.unknown':'Position inconnue','sess.press':'Appuyez sur démarrer ; Diana suit votre position.',
-  'sess.inside':'Dans la zone','sess.outside':'Hors de la zone',
-  'sess.pos':'Votre position est dans','sess.outsidesub':'Votre position est hors des limites de la référence.',
-  'sess.rec':'Enregistrement','sess.notstarted':'Pas encore démarré','sess.points':'points enregistrés',
-  'sess.started':'Démarré à','sess.oftime':'du temps dans la zone',
-  'sess.need60':'60 min pas encore atteintes','sess.minleft':'min restantes','sess.ok60':'60 min atteintes',
-  'sess.start':'Démarrer l’activation','sess.restart':'Nouvelle activation','sess.stop':'Arrêter & générer la preuve',
-  'sess.gpx':'Télécharger GPX + résumé','sess.nopoints':'Aucun point enregistré.',
-  'sess.pickfirst':'Choisissez d’abord une zone sur la carte.',
-  'sess.privacy':'Votre trace reste sur cet appareil. Rien n’est envoyé tant que vous n’exportez pas.',
-  'rules.title':'Règles & plan de bande','rules.sub':'WWFF mondial et ce qu’ONFF y ajoute',
-  'rules.qso':'QSO minimum','rules.dur':'Durée minimale','rules.bound':'Limites','rules.call':'Indicatif',
-  'rules.proof':'Preuve','rules.log':'Envoi du log','rules.pref':'Fréquence WWFF',
-  'rules.yourband':'votre bande actuelle',
-  'heat.title':'Carte d’activité','heat.sub':'Quelles zones méritent de l’attention ?',
-  'heat.loading':'Chargement des données…','heat.activated':'zones déjà activées',
-  'heat.never':'jamais','heat.long':'Jamais / il y a longtemps','heat.recent':'Actif récemment',
-  'heat.neglected':'Zones les plus délaissées','heat.neveryet':'jamais activée','heat.yearsago':'ans',
-  'heat.cors':'La feuille de statut n’autorise pas la connexion directe (CORS). Le Worker du plan est nécessaire.',
-  'rules.w.qso':'44 (club 200)',
-'rules.w.dur':'—',
-'rules.w.bound':'tout l’équipement dans les limites',
-'rules.w.call':'—',
-'rules.w.proof':'—',
-'rules.w.log':'—',
-'rules.o.qso':'44, sauf en QRP',
-'rules.o.dur':'60 min à partir du premier QSO',
-'rules.o.bound':'idem',
-'rules.o.call':'/p ou /m pour le classement annuel',
-'rules.o.proof':'2 photos (max 600 px) ou 1 photo géolocalisée',
-'rules.o.log':'ADIF vers onfflogapproval@gmail.com',
-  'heat.fail':'Échec du chargement :'
+ "en": {
+  "lay.fit": "⤢ Fit all spots",
+  "spots.unplaced": "without a known location",
+  "nav.admin": "Admin",
+  "adm.title": "Administration",
+  "adm.sub": "Send new source files to the repository",
+  "adm.repo": "Repository",
+  "adm.owner": "Owner / repo",
+  "adm.branch": "Main branch",
+  "adm.token": "Access token",
+  "adm.remember": "Remember the token on this device",
+  "adm.tokenwarn": "A token in the browser is readable by anyone with access to this device. Use a fine-grained token limited to THIS repository, contents and pull requests only, with a short expiry. Not on a shared computer.",
+  "adm.test": "Test the connection",
+  "adm.testing": "connecting…",
+  "adm.needboth": "Fill in the repository and the token first",
+  "adm.noperm": "This token cannot write to this repository",
+  "adm.upload": "Upload a file",
+  "adm.target": "Target folder in the repo",
+  "adm.send": "Upload and open a pull request",
+  "adm.uploadhint": "The file lands on a new branch and becomes a pull request. The workflows convert it and show the diff report and a preview. Publishing stays your click.",
+  "adm.s1": "Reading the base branch",
+  "adm.s2": "Reading the file",
+  "adm.s3": "Sending the file to GitHub",
+  "adm.s4": "Updating the tree",
+  "adm.s5": "Creating the commit",
+  "adm.s6": "Creating the branch",
+  "adm.s7": "Opening the pull request",
+  "adm.openpr": "Open pull request",
+  "adm.done": "Pull request created",
+  "adm.failed": "Upload failed",
+  "adm.unlocked": "Admin is unlocked",
+  "adm.embed": "Embed on a website",
+  "adm.embprov": "Province / region",
+  "adm.emblang": "Language",
+  "adm.embspots": "Spots on by default",
+  "adm.copy": "Copy",
+  "adm.copied": "Copied",
+  "adm.copyfail": "Could not copy",
+  "nav.map": "Map",
+  "nav.spots": "Spots",
+  "nav.self": "Spot",
+  "nav.session": "Session",
+  "nav.heat": "Heatmap",
+  "nav.rules": "Rules",
+  "nav.settings": "Settings",
+  "map.areas": "WWFF references",
+  "map.datafail": "Could not load the reference data",
+  "search.ph": "Search by name or number…",
+  "search.none": "Nothing found",
+  "lay.title": "Layers",
+  "lay.style": "Map style",
+  "lay.onff": "Reference areas",
+  "lay.labels": "Reference numbers",
+  "lay.spots": "Spots & agenda",
+  "lay.other": "BCA, BLHA…",
+  "lay.lang": "Language",
+  "lay.offline": "⤓ Save this area offline",
+  "lay.spothint": "Spots come live from WWFF Spotline and refresh every 30 s.",
+  "zone.area": "Area",
+  "zone.manager": "Managed by",
+  "zone.desig": "Designation",
+  "zone.iucn": "IUCN category",
+  "zone.reg": "Registration number",
+  "zone.since": "Designated since",
+  "zone.parts": "Parcels",
+  "zone.partsnote": "Made up of {n} separate parcels. Your whole station must be inside one of them.",
+  "zone.overlap": "This point is also inside {refs} — you are then in several references at once.",
+  "zone.spotme": "Spot yourself here",
+  "gps.none": "No GPS available",
+  "gps.nonesub": "This browser does not share a location.",
+  "gps.searching": "Finding your position…",
+  "gps.failed": "Could not get a fix",
+  "gps.inone": "You are inside the reference",
+  "gps.inmany": "You are inside {n} references",
+  "gps.toedge": "{d} m to the nearest boundary.",
+  "gps.nearedge": "Right at the boundary of {ref}",
+  "gps.nearedgesub": "±{d} m from the edge, GPS accuracy ±{a} m — check visually.",
+  "gps.outside": "You are outside any reference",
+  "gps.nearest": "Nearest",
+  "spots.title": "Spots & agenda",
+  "spots.sub": "Who is on air now, and who announced what?",
+  "spots.tabnow": "On air",
+  "spots.tabagenda": "Agenda",
+  "spots.world": "Worldwide",
+  "spots.loading": "loading…",
+  "spots.none": "No active spots in this selection.",
+  "spots.noagenda": "Nothing announced in this selection.",
+  "spots.now": "live",
+  "spots.until": "until",
+  "spots.announced": "announcements",
+  "spots.updated": "updated at",
+  "spot.freqmode": "Frequency / mode",
+  "spot.area": "Reference",
+  "spot.locthere": "Locator there",
+  "spot.locyou": "Your locator",
+  "spot.remark": "Remarks",
+  "spot.fromyou": "bearing from your position",
+  "spot.justnow": "spotted just now",
+  "spot.minago": "spotted {n} min ago",
+  "spot.nofix": "Press ◎ to get your position; bearing and distance appear here.",
+  "self.title": "Spot yourself",
+  "self.sub": "Sends a spot via WWFF Spotline",
+  "self.prefilled": "prefilled from the selected reference",
+  "self.activator": "Activator callsign",
+  "self.spotter": "Spotter",
+  "self.ref": "WWFF reference",
+  "self.freq": "Frequency (kHz)",
+  "self.mode": "Mode",
+  "self.remarks": "Remarks (optional)",
+  "self.send": "Send spot",
+  "self.newtab": "Opens Spotline in a new tab so you see their own confirmation.",
+  "self.warn": "No thanks or band requests here. Every spot goes to the DX cluster; anything else is noise. Spotline also filters inappropriate language.",
+  "self.reftooshort": "at least 7 characters",
+  "self.refchecking": "checking reference…",
+  "self.refinactive": "✗ reference is not active",
+  "self.refunknown": "✗ reference not found",
+  "self.refnocheck": "could not be checked — Spotline checks it too",
+  "self.freqrange": "must be between 135.7 and 7,500,000,000 kHz",
+  "self.segment": "segment per the band plan",
+  "self.sent": "Spot sent",
+  "sess.title": "Activation session",
+  "sess.sub": "Pick a reference on the map first",
+  "sess.unknown": "Position unknown",
+  "sess.press": "Press start; Diana follows your position.",
+  "sess.inside": "Inside the reference",
+  "sess.outside": "Outside the reference",
+  "sess.pos": "Your position is inside",
+  "sess.outsidesub": "Your position is outside the reference boundary.",
+  "sess.rec": "Recording",
+  "sess.notstarted": "Not started",
+  "sess.points": "points logged",
+  "sess.started": "Started at",
+  "sess.oftime": "of the time inside the reference",
+  "sess.need60": "60 min not reached yet",
+  "sess.minleft": "min to go",
+  "sess.ok60": "60 min reached",
+  "sess.start": "Start activation",
+  "sess.restart": "New activation",
+  "sess.stop": "Stop & generate proof",
+  "sess.gpx": "Download GPX + summary",
+  "sess.nopoints": "No track points were logged.",
+  "sess.pickfirst": "Pick a reference on the map first.",
+  "sess.privacy": "Your track stays on this device. Nothing is sent anywhere until you export it.",
+  "heat.title": "Activation heatmap",
+  "heat.sub": "Which references need attention?",
+  "heat.byrecency": "Last active",
+  "heat.byqso": "QSO count",
+  "heat.loading": "Loading status data…",
+  "heat.activated": "references ever activated",
+  "heat.never": "never yet",
+  "heat.long": "Never / long ago",
+  "heat.recent": "Recently active",
+  "heat.few": "Few / never",
+  "heat.many": "Many QSOs",
+  "heat.qsototal": "QSOs across the years loaded",
+  "heat.neglected": "Most neglected references",
+  "heat.neveryet": "never activated",
+  "heat.yearsago": "years ago",
+  "heat.cors": "The status sheet does not allow a direct connection (CORS).",
+  "heat.fail": "Could not load status data:",
+  "rules.title": "Rules & band plan",
+  "rules.sub": "WWFF worldwide and what ONFF adds",
+  "rules.qso": "Minimum QSOs",
+  "rules.dur": "Minimum duration",
+  "rules.bound": "Boundary",
+  "rules.call": "Callsign",
+  "rules.proof": "Proof",
+  "rules.log": "Log submission",
+  "rules.pref": "WWFF preferred",
+  "rules.mkwwff": "WWFF preferred frequency",
+  "rules.src": "Source: IARU Region 1 band plan and WWFF Global Rules §14.7. Your licence class may restrict further.",
+  "off.downloading": "Downloading area…",
+  "off.tiles": "tiles",
+  "off.tilesoffline": "tiles available without a network.",
+  "off.saved": "Area saved",
+  "off.cannot": "Offline saving is not possible here",
+  "off.cannotsub": "That only works when Diana runs from a web address.",
+  "off.zoomin": "Zoom in a bit first",
+  "off.zoominsub": "The current view is too large to save offline.",
+  "set.title": "Settings",
+  "set.sub": "Stays on this device — nothing goes to a server",
+  "set.you": "Your station",
+  "set.call": "Callsign",
+  "set.portable": "Portable callsign",
+  "set.grid": "Maidenhead locator",
+  "set.gridfrom": "Take from GPS",
+  "set.gridbad": "Not a valid locator (e.g. JO21EE)",
+  "set.startview": "Map start view",
+  "set.fromgrid": "At your locator",
+  "set.fromcall": "At your country (from the callsign)",
+  "set.wholemap": "Show everything",
+  "set.saved": "Saved on this device",
+  "set.localonly": "Everything you enter here stays in the browser of THIS device. If you also use Diana elsewhere, you have to enter it again there.",
+  "rules.w.qso": "44 (club 200)",
+  "rules.w.dur": "—",
+  "rules.w.bound": "all equipment inside the boundary",
+  "rules.w.call": "—",
+  "rules.w.proof": "—",
+  "rules.w.log": "—",
+  "rules.o.qso": "44, except QRP",
+  "rules.o.dur": "60 min from the first QSO",
+  "rules.o.bound": "same",
+  "rules.o.call": "/p or /m for the yearly ranking",
+  "rules.o.proof": "2 photos (max 600 px) or 1 geotagged photo",
+  "rules.o.log": "ADIF to onfflogapproval@gmail.com"
  },
- en:{
-  'nav.spots':'Spots',
-  'spots.title':'Spots & agenda',
-  'spots.sub':'Who is on air now, and who announced what?',
-  'spots.tabnow':'On air',
-  'spots.tabagenda':'Agenda',
-  'spots.world':'Worldwide',
-  'spots.loading':'loading…',
-  'spots.now':'live',
-  'spots.until':'until',
-  'spots.noagenda':'Nothing announced in this selection.',
-  'spots.announced':'announcements',
-  'spots.updated':'updated at',
-  'heat.byrecency':'Last active',
-  'heat.byqso':'QSO count',
-  'heat.few':'Few / never',
-  'heat.many':'Many QSOs',
-  'heat.qsototal':'QSOs across the years loaded',
-  'rules.mkwwff':'WWFF preferred frequency',
-  'rules.src':'Source: IARU Region 1 band plan and WWFF Global Rules §14.7. Your licence class may restrict further.',
-  'nav.map':'Map','nav.session':'Session','nav.heat':'Heatmap','nav.rules':'Rules',
-  'sess.title':'Activation session','sess.sub':'Pick a reference on the map first',
-  'sess.unknown':'Position unknown','sess.press':'Press start; Diana follows your position.',
-  'sess.inside':'Inside the reference','sess.outside':'Outside the reference',
-  'sess.pos':'Your position falls inside','sess.outsidesub':'Your position is outside the reference boundary.',
-  'sess.rec':'Recording','sess.notstarted':'Not started','sess.points':'points logged',
-  'sess.started':'Started at','sess.oftime':'of the time inside the reference',
-  'sess.need60':'60 min not reached yet','sess.minleft':'min to go','sess.ok60':'60 min reached',
-  'sess.start':'Start activation','sess.restart':'New activation','sess.stop':'Stop & generate proof',
-  'sess.gpx':'Download GPX + summary','sess.nopoints':'No track points were logged.',
-  'sess.pickfirst':'Pick a reference on the map first.',
-  'sess.privacy':'Your track stays on this device. Nothing is sent anywhere until you export it.',
-  'rules.title':'Rules & band plan','rules.sub':'WWFF worldwide and what ONFF adds',
-  'rules.qso':'Minimum QSOs','rules.dur':'Minimum duration','rules.bound':'Boundary','rules.call':'Callsign',
-  'rules.proof':'Proof','rules.log':'Log submission','rules.pref':'WWFF preferred',
-  'rules.yourband':'your current band',
-  'heat.title':'Activation heatmap','heat.sub':'Which references need attention?',
-  'heat.loading':'Loading status data…','heat.activated':'references ever activated',
-  'heat.never':'never yet','heat.long':'Never / long ago','heat.recent':'Recently active',
-  'heat.neglected':'Most neglected references','heat.neveryet':'never activated','heat.yearsago':'years ago',
-  'heat.cors':'The status sheet does not allow a direct connection (CORS). The Worker from the plan is needed.',
-  'rules.w.qso':'44 (club 200)',
-'rules.w.dur':'—',
-'rules.w.bound':'all equipment inside the boundary',
-'rules.w.call':'—',
-'rules.w.proof':'—',
-'rules.w.log':'—',
-'rules.o.qso':'44, except QRP',
-'rules.o.dur':'60 min from the first QSO',
-'rules.o.bound':'same',
-'rules.o.call':'/p or /m for the yearly ranking',
-'rules.o.proof':'2 photos (max 600 px) or 1 geotagged photo',
-'rules.o.log':'ADIF to onfflogapproval@gmail.com',
-  'heat.fail':'Could not load status data:'
+ "fr": {
+  "lay.fit": "⤢ Afficher tous les spots",
+  "spots.unplaced": "sans position connue",
+  "nav.admin": "Gestion",
+  "adm.title": "Administration",
+  "adm.sub": "Envoyer de nouveaux fichiers source",
+  "adm.repo": "Dépôt",
+  "adm.owner": "Propriétaire / dépôt",
+  "adm.branch": "Branche principale",
+  "adm.token": "Jeton d’accès",
+  "adm.remember": "Mémoriser le jeton sur cet appareil",
+  "adm.tokenwarn": "Un jeton dans le navigateur est lisible par quiconque a accès à cet appareil. Utilisez un jeton fine-grained limité à CE dépôt, contenu et pull requests seulement, avec une expiration courte. Pas sur un ordinateur partagé.",
+  "adm.test": "Tester la connexion",
+  "adm.testing": "connexion…",
+  "adm.needboth": "Renseignez d’abord le dépôt et le jeton",
+  "adm.noperm": "Ce jeton ne peut pas écrire dans ce dépôt",
+  "adm.upload": "Téléverser un fichier",
+  "adm.target": "Dossier cible",
+  "adm.send": "Téléverser et ouvrir une pull request",
+  "adm.uploadhint": "Le fichier arrive sur une nouvelle branche et devient une pull request. Les workflows le convertissent et affichent le rapport et un aperçu. Publier reste votre clic.",
+  "adm.s1": "Lecture de la branche de base",
+  "adm.s2": "Lecture du fichier",
+  "adm.s3": "Envoi du fichier à GitHub",
+  "adm.s4": "Mise à jour de l’arbre",
+  "adm.s5": "Création du commit",
+  "adm.s6": "Création de la branche",
+  "adm.s7": "Ouverture de la pull request",
+  "adm.openpr": "Ouvrir la pull request",
+  "adm.done": "Pull request créée",
+  "adm.failed": "Échec du téléversement",
+  "adm.unlocked": "Gestion activée",
+  "adm.embed": "Intégrer sur un site",
+  "adm.embprov": "Province / région",
+  "adm.emblang": "Langue",
+  "adm.embspots": "Spots activés d’emblée",
+  "adm.copy": "Copier",
+  "adm.copied": "Copié",
+  "adm.copyfail": "Copie impossible",
+  "nav.map": "Carte",
+  "nav.spots": "Spots",
+  "nav.self": "Spoter",
+  "nav.session": "Session",
+  "nav.heat": "Activité",
+  "nav.rules": "Règles",
+  "nav.settings": "Réglages",
+  "map.areas": "références WWFF",
+  "map.datafail": "Impossible de charger les données",
+  "search.ph": "Rechercher par nom ou numéro…",
+  "search.none": "Aucun résultat",
+  "lay.title": "Couches",
+  "lay.style": "Style de carte",
+  "lay.onff": "Zones",
+  "lay.labels": "Numéros de référence",
+  "lay.spots": "Spots et agenda",
+  "lay.other": "BCA, BLHA…",
+  "lay.lang": "Langue",
+  "lay.offline": "⤓ Enregistrer hors ligne",
+  "lay.spothint": "Les spots viennent de WWFF Spotline, actualisés toutes les 30 s.",
+  "zone.area": "Superficie",
+  "zone.manager": "Gestionnaire",
+  "zone.desig": "Désignation",
+  "zone.iucn": "Catégorie UICN",
+  "zone.reg": "Numéro d’enregistrement",
+  "zone.since": "Désigné depuis",
+  "zone.parts": "Parcelles",
+  "zone.partsnote": "Composé de {n} parcelles séparées. Toute votre station doit être dans une seule.",
+  "zone.overlap": "Ce point est aussi dans {refs} — vous êtes alors dans plusieurs références.",
+  "zone.spotme": "Annoncez-vous ici",
+  "gps.none": "GPS indisponible",
+  "gps.nonesub": "Ce navigateur ne partage pas de position.",
+  "gps.searching": "Recherche de la position…",
+  "gps.failed": "Échec de la localisation",
+  "gps.inone": "Vous êtes dans la zone",
+  "gps.inmany": "Vous êtes dans {n} zones",
+  "gps.toedge": "{d} m jusqu’à la limite la plus proche.",
+  "gps.nearedge": "Juste à la limite de {ref}",
+  "gps.nearedgesub": "±{d} m du bord, précision GPS ±{a} m — vérifiez visuellement.",
+  "gps.outside": "Vous êtes hors zone",
+  "gps.nearest": "Le plus proche",
+  "spots.title": "Spots et agenda",
+  "spots.sub": "Qui est actif, qui annonce quoi ?",
+  "spots.tabnow": "En cours",
+  "spots.tabagenda": "Agenda",
+  "spots.world": "Mondial",
+  "spots.loading": "chargement…",
+  "spots.none": "Aucun spot actif dans cette sélection.",
+  "spots.noagenda": "Rien d’annoncé dans cette sélection.",
+  "spots.now": "en cours",
+  "spots.until": "jusqu’à",
+  "spots.announced": "annonces",
+  "spots.updated": "mis à jour à",
+  "spot.freqmode": "Fréquence / mode",
+  "spot.area": "Zone",
+  "spot.locthere": "Locator là-bas",
+  "spot.locyou": "Votre locator",
+  "spot.remark": "Remarque",
+  "spot.fromyou": "cap depuis votre position",
+  "spot.justnow": "spoté à l’instant",
+  "spot.minago": "spoté il y a {n} min",
+  "spot.nofix": "Appuyez sur ◎ pour votre position ; cap et distance s’affichent ici.",
+  "self.title": "Annoncez-vous",
+  "self.sub": "Envoie un spot via WWFF Spotline",
+  "self.prefilled": "prérempli depuis la zone sélectionnée",
+  "self.activator": "Indicatif (activateur)",
+  "self.spotter": "Spotter",
+  "self.ref": "Référence WWFF",
+  "self.freq": "Fréquence (kHz)",
+  "self.mode": "Mode",
+  "self.remarks": "Remarque (facultatif)",
+  "self.send": "Envoyer le spot",
+  "self.newtab": "Ouvre Spotline dans un nouvel onglet pour voir leur confirmation.",
+  "self.warn": "Pas de remerciements ni de demandes de bande. Chaque spot part vers le DX cluster ; le reste est du bruit. Spotline filtre aussi le langage inapproprié.",
+  "self.reftooshort": "au moins 7 caractères",
+  "self.refchecking": "vérification…",
+  "self.refinactive": "✗ référence inactive",
+  "self.refunknown": "✗ référence introuvable",
+  "self.refnocheck": "non vérifiable — Spotline vérifie aussi",
+  "self.freqrange": "doit être entre 135,7 et 7 500 000 000 kHz",
+  "self.segment": "segment selon le plan de bandes",
+  "self.sent": "Spot envoyé",
+  "sess.title": "Session d’activation",
+  "sess.sub": "Choisissez d’abord une zone",
+  "sess.unknown": "Position inconnue",
+  "sess.press": "Appuyez sur démarrer ; Diana suit votre position.",
+  "sess.inside": "Dans la zone",
+  "sess.outside": "Hors de la zone",
+  "sess.pos": "Votre position est dans",
+  "sess.outsidesub": "Votre position est hors des limites.",
+  "sess.rec": "Enregistrement",
+  "sess.notstarted": "Pas démarré",
+  "sess.points": "points enregistrés",
+  "sess.started": "Démarré à",
+  "sess.oftime": "du temps dans la zone",
+  "sess.need60": "60 min pas atteintes",
+  "sess.minleft": "min restantes",
+  "sess.ok60": "60 min atteintes",
+  "sess.start": "Démarrer l’activation",
+  "sess.restart": "Nouvelle activation",
+  "sess.stop": "Arrêter & générer la preuve",
+  "sess.gpx": "Télécharger GPX + résumé",
+  "sess.nopoints": "Aucun point enregistré.",
+  "sess.pickfirst": "Choisissez d’abord une zone.",
+  "sess.privacy": "Votre trace reste sur cet appareil. Rien n’est envoyé tant que vous n’exportez pas.",
+  "heat.title": "Carte d’activité",
+  "heat.sub": "Quelles zones méritent attention ?",
+  "heat.byrecency": "Dernière activité",
+  "heat.byqso": "Nombre de QSO",
+  "heat.loading": "Chargement des données…",
+  "heat.activated": "zones déjà activées",
+  "heat.never": "jamais",
+  "heat.long": "Jamais / il y a longtemps",
+  "heat.recent": "Actif récemment",
+  "heat.few": "Peu / jamais",
+  "heat.many": "Beaucoup de QSO",
+  "heat.qsototal": "QSO sur les années chargées",
+  "heat.neglected": "Zones les plus délaissées",
+  "heat.neveryet": "jamais activée",
+  "heat.yearsago": "ans",
+  "heat.cors": "La feuille de statut n’autorise pas la connexion directe (CORS).",
+  "heat.fail": "Échec du chargement :",
+  "rules.title": "Règles & plan de bandes",
+  "rules.sub": "WWFF mondial et ce qu’ONFF ajoute",
+  "rules.qso": "QSO minimum",
+  "rules.dur": "Durée minimale",
+  "rules.bound": "Limites",
+  "rules.call": "Indicatif",
+  "rules.proof": "Preuve",
+  "rules.log": "Envoi du log",
+  "rules.pref": "Fréquence WWFF",
+  "rules.mkwwff": "Fréquence préférée WWFF",
+  "rules.src": "Source : plan de bandes IARU Région 1 et WWFF Global Rules §14.7. Votre classe de licence peut restreindre davantage.",
+  "off.downloading": "Téléchargement de la zone…",
+  "off.tiles": "tuiles",
+  "off.tilesoffline": "tuiles disponibles hors ligne.",
+  "off.saved": "Zone enregistrée",
+  "off.cannot": "Enregistrement hors ligne impossible",
+  "off.cannotsub": "Cela ne marche que depuis une adresse web.",
+  "off.zoomin": "Zoomez d’abord",
+  "off.zoominsub": "La vue actuelle est trop grande.",
+  "set.title": "Réglages",
+  "set.sub": "Reste sur cet appareil — rien n’est envoyé",
+  "set.you": "Votre station",
+  "set.call": "Indicatif",
+  "set.portable": "Indicatif portable",
+  "set.grid": "Locator Maidenhead",
+  "set.gridfrom": "Depuis le GPS",
+  "set.gridbad": "Locator non valide (ex. JO21EE)",
+  "set.startview": "Vue initiale de la carte",
+  "set.fromgrid": "À votre locator",
+  "set.fromcall": "À votre pays (depuis l’indicatif)",
+  "set.wholemap": "Tout afficher",
+  "set.saved": "Enregistré sur cet appareil",
+  "set.localonly": "Tout ce que vous saisissez reste dans le navigateur de CET appareil. Sur un autre appareil, il faut le ressaisir.",
+  "rules.w.qso": "44 (club 200)",
+  "rules.w.dur": "—",
+  "rules.w.bound": "tout l’équipement dans les limites",
+  "rules.w.call": "—",
+  "rules.w.proof": "—",
+  "rules.w.log": "—",
+  "rules.o.qso": "44, sauf en QRP",
+  "rules.o.dur": "60 min à partir du premier QSO",
+  "rules.o.bound": "idem",
+  "rules.o.call": "/p ou /m pour le classement annuel",
+  "rules.o.proof": "2 photos (max 600 px) ou 1 photo géolocalisée",
+  "rules.o.log": "ADIF vers onfflogapproval@gmail.com"
+ },
+ "de": {
+  "lay.fit": "⤢ Alle Spots einpassen",
+  "spots.unplaced": "ohne bekannte Position",
+  "nav.admin": "Verwaltung",
+  "adm.title": "Verwaltung",
+  "adm.sub": "Neue Quelldateien ins Repository senden",
+  "adm.repo": "Repository",
+  "adm.owner": "Eigentümer / Repo",
+  "adm.branch": "Hauptbranch",
+  "adm.token": "Zugriffstoken",
+  "adm.remember": "Token auf diesem Gerät merken",
+  "adm.tokenwarn": "Ein Token im Browser ist für jeden lesbar, der Zugriff auf dieses Gerät hat. Nutzen Sie ein fine-grained Token nur für DIESES Repository, nur Inhalte und Pull Requests, mit kurzer Gültigkeit. Nicht auf einem gemeinsam genutzten Rechner.",
+  "adm.test": "Verbindung testen",
+  "adm.testing": "verbinde…",
+  "adm.needboth": "Erst Repository und Token eintragen",
+  "adm.noperm": "Dieses Token darf hier nicht schreiben",
+  "adm.upload": "Datei hochladen",
+  "adm.target": "Zielordner im Repo",
+  "adm.send": "Hochladen und Pull Request öffnen",
+  "adm.uploadhint": "Die Datei landet auf einem neuen Branch und wird ein Pull Request. Die Workflows konvertieren sie und zeigen Bericht und Vorschau. Veröffentlichen bleibt Ihr Klick.",
+  "adm.s1": "Basisbranch lesen",
+  "adm.s2": "Datei einlesen",
+  "adm.s3": "Datei an GitHub senden",
+  "adm.s4": "Baum aktualisieren",
+  "adm.s5": "Commit erstellen",
+  "adm.s6": "Branch anlegen",
+  "adm.s7": "Pull Request öffnen",
+  "adm.openpr": "Pull Request öffnen",
+  "adm.done": "Pull Request erstellt",
+  "adm.failed": "Upload fehlgeschlagen",
+  "adm.unlocked": "Verwaltung freigeschaltet",
+  "adm.embed": "In eine Website einbetten",
+  "adm.embprov": "Provinz / Region",
+  "adm.emblang": "Sprache",
+  "adm.embspots": "Spots direkt an",
+  "adm.copy": "Kopieren",
+  "adm.copied": "Kopiert",
+  "adm.copyfail": "Kopieren fehlgeschlagen",
+  "nav.map": "Karte",
+  "nav.spots": "Spots",
+  "nav.self": "Melden",
+  "nav.session": "Sitzung",
+  "nav.heat": "Heatmap",
+  "nav.rules": "Regeln",
+  "nav.settings": "Einstellungen",
+  "map.areas": "WWFF-Gebiete",
+  "map.datafail": "Gebietsdaten konnten nicht geladen werden",
+  "search.ph": "Nach Name oder Nummer suchen…",
+  "search.none": "Nichts gefunden",
+  "lay.title": "Ebenen",
+  "lay.style": "Kartenstil",
+  "lay.onff": "Schutzgebiete",
+  "lay.labels": "Referenznummern",
+  "lay.spots": "Spots & Agenda",
+  "lay.other": "BCA, BLHA…",
+  "lay.lang": "Sprache",
+  "lay.offline": "⤓ Dieses Gebiet offline speichern",
+  "lay.spothint": "Spots kommen live von WWFF Spotline, alle 30 s aktualisiert.",
+  "zone.area": "Fläche",
+  "zone.manager": "Verwaltung",
+  "zone.desig": "Ausweisung",
+  "zone.iucn": "IUCN-Kategorie",
+  "zone.reg": "Registriernummer",
+  "zone.since": "Ausgewiesen seit",
+  "zone.parts": "Teilflächen",
+  "zone.partsnote": "Besteht aus {n} getrennten Teilflächen. Die ganze Station muss in einer davon stehen.",
+  "zone.overlap": "Dieser Punkt liegt auch in {refs} — Sie stehen dann in mehreren Referenzen.",
+  "zone.spotme": "Hier selbst spotten",
+  "gps.none": "Kein GPS verfügbar",
+  "gps.nonesub": "Dieser Browser teilt keinen Standort.",
+  "gps.searching": "Position wird gesucht…",
+  "gps.failed": "Standort fehlgeschlagen",
+  "gps.inone": "Sie stehen im Gebiet",
+  "gps.inmany": "Sie stehen in {n} Gebieten",
+  "gps.toedge": "{d} m bis zur nächsten Grenze.",
+  "gps.nearedge": "Direkt an der Grenze von {ref}",
+  "gps.nearedgesub": "±{d} m vom Rand, GPS-Genauigkeit ±{a} m — visuell prüfen.",
+  "gps.outside": "Sie stehen außerhalb",
+  "gps.nearest": "Am nächsten",
+  "spots.title": "Spots & Agenda",
+  "spots.sub": "Wer ist jetzt aktiv, wer kündigt an?",
+  "spots.tabnow": "Jetzt aktiv",
+  "spots.tabagenda": "Agenda",
+  "spots.world": "Weltweit",
+  "spots.loading": "lädt…",
+  "spots.none": "Keine aktiven Spots in dieser Auswahl.",
+  "spots.noagenda": "Nichts angekündigt in dieser Auswahl.",
+  "spots.now": "läuft",
+  "spots.until": "bis",
+  "spots.announced": "Ankündigungen",
+  "spots.updated": "aktualisiert um",
+  "spot.freqmode": "Frequenz / Mode",
+  "spot.area": "Gebiet",
+  "spot.locthere": "Locator dort",
+  "spot.locyou": "Ihr Locator",
+  "spot.remark": "Bemerkung",
+  "spot.fromyou": "Richtung von Ihrem Standort",
+  "spot.justnow": "gerade gespottet",
+  "spot.minago": "vor {n} min gespottet",
+  "spot.nofix": "Auf ◎ drücken für Ihren Standort; Richtung und Entfernung erscheinen hier.",
+  "self.title": "Selbst spotten",
+  "self.sub": "Sendet einen Spot über WWFF Spotline",
+  "self.prefilled": "vorausgefüllt aus dem gewählten Gebiet",
+  "self.activator": "Rufzeichen (Aktivierer)",
+  "self.spotter": "Spotter",
+  "self.ref": "WWFF-Referenz",
+  "self.freq": "Frequenz (kHz)",
+  "self.mode": "Mode",
+  "self.remarks": "Bemerkung (optional)",
+  "self.send": "Spot senden",
+  "self.newtab": "Öffnet Spotline in einem neuen Tab, damit Sie deren Bestätigung sehen.",
+  "self.warn": "Keine Danksagungen oder Bandwünsche. Jeder Spot geht ins DX-Cluster; alles andere ist Rauschen. Spotline filtert zudem unangemessene Sprache.",
+  "self.reftooshort": "mindestens 7 Zeichen",
+  "self.refchecking": "Referenz prüfen…",
+  "self.refinactive": "✗ Referenz ist nicht aktiv",
+  "self.refunknown": "✗ Referenz nicht gefunden",
+  "self.refnocheck": "nicht prüfbar — Spotline prüft ebenfalls",
+  "self.freqrange": "muss zwischen 135,7 und 7.500.000.000 kHz liegen",
+  "self.segment": "Segment laut Bandplan",
+  "self.sent": "Spot gesendet",
+  "sess.title": "Aktivierungssitzung",
+  "sess.sub": "Zuerst ein Gebiet auf der Karte wählen",
+  "sess.unknown": "Position unbekannt",
+  "sess.press": "Auf Start drücken; Diana folgt Ihrer Position.",
+  "sess.inside": "Im Gebiet",
+  "sess.outside": "Außerhalb",
+  "sess.pos": "Ihre Position liegt in",
+  "sess.outsidesub": "Ihre Position liegt außerhalb der Grenze.",
+  "sess.rec": "Aufzeichnung",
+  "sess.notstarted": "Nicht gestartet",
+  "sess.points": "Punkte erfasst",
+  "sess.started": "Gestartet um",
+  "sess.oftime": "der Zeit im Gebiet",
+  "sess.need60": "60 min noch nicht erreicht",
+  "sess.minleft": "min verbleibend",
+  "sess.ok60": "60 min erreicht",
+  "sess.start": "Aktivierung starten",
+  "sess.restart": "Neue Aktivierung",
+  "sess.stop": "Stopp & Nachweis erzeugen",
+  "sess.gpx": "GPX + Zusammenfassung laden",
+  "sess.nopoints": "Keine Trackpunkte erfasst.",
+  "sess.pickfirst": "Zuerst ein Gebiet wählen.",
+  "sess.privacy": "Ihr Track bleibt auf diesem Gerät. Nichts wird gesendet, bis Sie exportieren.",
+  "heat.title": "Aktivierungs-Heatmap",
+  "heat.sub": "Welche Gebiete brauchen Aufmerksamkeit?",
+  "heat.byrecency": "Zuletzt aktiv",
+  "heat.byqso": "QSO-Anzahl",
+  "heat.loading": "Statusdaten laden…",
+  "heat.activated": "Gebiete je aktiviert",
+  "heat.never": "noch nie",
+  "heat.long": "Nie / lange her",
+  "heat.recent": "Kürzlich aktiv",
+  "heat.few": "Wenige / nie",
+  "heat.many": "Viele QSOs",
+  "heat.qsototal": "QSOs in den geladenen Jahren",
+  "heat.neglected": "Am meisten vernachlässigt",
+  "heat.neveryet": "nie aktiviert",
+  "heat.yearsago": "Jahre her",
+  "heat.cors": "Das Status-Sheet erlaubt keine Direktverbindung (CORS).",
+  "heat.fail": "Statusdaten konnten nicht geladen werden:",
+  "rules.title": "Regeln & Bandplan",
+  "rules.sub": "WWFF weltweit und was ONFF ergänzt",
+  "rules.qso": "Mindest-QSOs",
+  "rules.dur": "Mindestdauer",
+  "rules.bound": "Grenze",
+  "rules.call": "Rufzeichen",
+  "rules.proof": "Nachweis",
+  "rules.log": "Log-Einreichung",
+  "rules.pref": "WWFF-Vorzug",
+  "rules.mkwwff": "WWFF-Vorzugsfrequenz",
+  "rules.src": "Quelle: IARU-Region-1-Bandplan und WWFF Global Rules §14.7. Ihre Lizenzklasse kann weiter einschränken.",
+  "off.downloading": "Gebiet wird geladen…",
+  "off.tiles": "Kacheln",
+  "off.tilesoffline": "Kacheln offline verfügbar.",
+  "off.saved": "Gebiet gespeichert",
+  "off.cannot": "Offline-Speichern hier nicht möglich",
+  "off.cannotsub": "Das geht nur, wenn Diana von einer Web-Adresse läuft.",
+  "off.zoomin": "Erst etwas hineinzoomen",
+  "off.zoominsub": "Der aktuelle Ausschnitt ist zu groß.",
+  "set.title": "Einstellungen",
+  "set.sub": "Bleibt auf diesem Gerät — nichts geht an einen Server",
+  "set.you": "Ihre Station",
+  "set.call": "Rufzeichen",
+  "set.portable": "Portable-Rufzeichen",
+  "set.grid": "Maidenhead-Locator",
+  "set.gridfrom": "Aus GPS übernehmen",
+  "set.gridbad": "Kein gültiger Locator (z. B. JO21EE)",
+  "set.startview": "Kartenstartansicht",
+  "set.fromgrid": "Bei Ihrem Locator",
+  "set.fromcall": "Bei Ihrem Land (aus dem Rufzeichen)",
+  "set.wholemap": "Alles zeigen",
+  "set.saved": "Auf diesem Gerät gespeichert",
+  "set.localonly": "Alles hier bleibt im Browser DIESES Geräts. Auf einem anderen Gerät müssen Sie es erneut eingeben.",
+  "rules.w.qso": "44 (club 200)",
+  "rules.w.dur": "—",
+  "rules.w.bound": "gesamte Ausrüstung innerhalb der Grenze",
+  "rules.w.call": "—",
+  "rules.w.proof": "—",
+  "rules.w.log": "—",
+  "rules.o.qso": "44, außer QRP",
+  "rules.o.dur": "60 min ab dem ersten QSO",
+  "rules.o.bound": "ebenso",
+  "rules.o.call": "/p oder /m für die Jahreswertung",
+  "rules.o.proof": "2 Fotos (max 600 px) oder 1 Geotag-Foto",
+  "rules.o.log": "ADIF an onfflogapproval@gmail.com"
+ },
+ "da": {
+  "lay.fit": "⤢ Vis alle spots",
+  "spots.unplaced": "uden kendt position",
+  "nav.admin": "Admin",
+  "adm.title": "Administration",
+  "adm.sub": "Send nye kildefiler til repositoriet",
+  "adm.repo": "Repository",
+  "adm.owner": "Ejer / repo",
+  "adm.branch": "Hovedbranch",
+  "adm.token": "Adgangstoken",
+  "adm.remember": "Husk token på denne enhed",
+  "adm.tokenwarn": "Et token i browseren kan læses af alle med adgang til denne enhed. Brug et fine-grained token kun til DETTE repository, kun indhold og pull requests, med kort udløb. Ikke på en delt computer.",
+  "adm.test": "Test forbindelsen",
+  "adm.testing": "forbinder…",
+  "adm.needboth": "Udfyld først repository og token",
+  "adm.noperm": "Dette token kan ikke skrive her",
+  "adm.upload": "Upload en fil",
+  "adm.target": "Målmappe i repoet",
+  "adm.send": "Upload og åbn en pull request",
+  "adm.uploadhint": "Filen lander på en ny branch og bliver en pull request. Workflows konverterer den og viser rapport og forhåndsvisning. Udgivelse er stadig dit klik.",
+  "adm.s1": "Læser basisbranch",
+  "adm.s2": "Læser filen",
+  "adm.s3": "Sender filen til GitHub",
+  "adm.s4": "Opdaterer træet",
+  "adm.s5": "Opretter commit",
+  "adm.s6": "Opretter branch",
+  "adm.s7": "Åbner pull request",
+  "adm.openpr": "Åbn pull request",
+  "adm.done": "Pull request oprettet",
+  "adm.failed": "Upload mislykkedes",
+  "adm.unlocked": "Administration åbnet",
+  "adm.embed": "Indlejr på et websted",
+  "adm.embprov": "Provins / region",
+  "adm.emblang": "Sprog",
+  "adm.embspots": "Spots slået til",
+  "adm.copy": "Kopiér",
+  "adm.copied": "Kopieret",
+  "adm.copyfail": "Kunne ikke kopiere",
+  "nav.map": "Kort",
+  "nav.spots": "Spots",
+  "nav.self": "Meld",
+  "nav.session": "Session",
+  "nav.heat": "Heatmap",
+  "nav.rules": "Regler",
+  "nav.settings": "Indstillinger",
+  "map.areas": "WWFF-områder",
+  "map.datafail": "Områdedata kunne ikke indlæses",
+  "search.ph": "Søg på navn eller nummer…",
+  "search.none": "Intet fundet",
+  "lay.title": "Lag",
+  "lay.style": "Kortstil",
+  "lay.onff": "Områder",
+  "lay.labels": "Referencenumre",
+  "lay.spots": "Spots & agenda",
+  "lay.other": "BCA, BLHA…",
+  "lay.lang": "Sprog",
+  "lay.offline": "⤓ Gem dette område offline",
+  "lay.spothint": "Spots kommer live fra WWFF Spotline og opdateres hvert 30. sekund.",
+  "zone.area": "Areal",
+  "zone.manager": "Forvalter",
+  "zone.desig": "Betegnelse",
+  "zone.iucn": "IUCN-kategori",
+  "zone.reg": "Registreringsnummer",
+  "zone.since": "Udpeget siden",
+  "zone.parts": "Parceller",
+  "zone.partsnote": "Består af {n} separate parceller. Hele stationen skal stå inden for én af dem.",
+  "zone.overlap": "Dette punkt ligger også i {refs} — du står da i flere referencer samtidig.",
+  "zone.spotme": "Spot dig selv her",
+  "gps.none": "Ingen GPS",
+  "gps.nonesub": "Denne browser deler ikke position.",
+  "gps.searching": "Finder position…",
+  "gps.failed": "Position mislykkedes",
+  "gps.inone": "Du er inde i området",
+  "gps.inmany": "Du er i {n} områder",
+  "gps.toedge": "{d} m til nærmeste grænse.",
+  "gps.nearedge": "Lige ved grænsen af {ref}",
+  "gps.nearedgesub": "±{d} m fra kanten, GPS-nøjagtighed ±{a} m — kontrollér visuelt.",
+  "gps.outside": "Du er uden for et område",
+  "gps.nearest": "Nærmest",
+  "spots.title": "Spots & agenda",
+  "spots.sub": "Hvem er på nu, og hvem har annonceret?",
+  "spots.tabnow": "Aktiv nu",
+  "spots.tabagenda": "Agenda",
+  "spots.world": "Globalt",
+  "spots.loading": "indlæser…",
+  "spots.none": "Ingen aktive spots i dette udvalg.",
+  "spots.noagenda": "Intet annonceret i dette udvalg.",
+  "spots.now": "i gang",
+  "spots.until": "til",
+  "spots.announced": "annonceringer",
+  "spots.updated": "opdateret kl.",
+  "spot.freqmode": "Frekvens / mode",
+  "spot.area": "Område",
+  "spot.locthere": "Locator der",
+  "spot.locyou": "Din locator",
+  "spot.remark": "Bemærkning",
+  "spot.fromyou": "retning fra din position",
+  "spot.justnow": "spottet lige nu",
+  "spot.minago": "spottet for {n} min siden",
+  "spot.nofix": "Tryk på ◎ for din position; retning og afstand vises her.",
+  "self.title": "Spot dig selv",
+  "self.sub": "Sender et spot via WWFF Spotline",
+  "self.prefilled": "forudfyldt fra det valgte område",
+  "self.activator": "Kaldesignal (aktivator)",
+  "self.spotter": "Spotter",
+  "self.ref": "WWFF-reference",
+  "self.freq": "Frekvens (kHz)",
+  "self.mode": "Mode",
+  "self.remarks": "Bemærkning (valgfri)",
+  "self.send": "Send spot",
+  "self.newtab": "Åbner Spotline i en ny fane, så du ser deres egen bekræftelse.",
+  "self.warn": "Ingen tak eller båndønsker her. Hvert spot går til DX-clusteret; alt andet er støj. Spotline filtrerer også upassende sprog.",
+  "self.reftooshort": "mindst 7 tegn",
+  "self.refchecking": "tjekker reference…",
+  "self.refinactive": "✗ reference er ikke aktiv",
+  "self.refunknown": "✗ reference ikke fundet",
+  "self.refnocheck": "kunne ikke tjekkes — Spotline tjekker også",
+  "self.freqrange": "skal være mellem 135,7 og 7.500.000.000 kHz",
+  "self.segment": "segment iflg. båndplanen",
+  "self.sent": "Spot sendt",
+  "sess.title": "Aktiveringssession",
+  "sess.sub": "Vælg først et område på kortet",
+  "sess.unknown": "Position ukendt",
+  "sess.press": "Tryk start; Diana følger din position.",
+  "sess.inside": "Inde i området",
+  "sess.outside": "Uden for området",
+  "sess.pos": "Din position er i",
+  "sess.outsidesub": "Din position er uden for grænsen.",
+  "sess.rec": "Optager",
+  "sess.notstarted": "Ikke startet",
+  "sess.points": "punkter logget",
+  "sess.started": "Startet kl.",
+  "sess.oftime": "af tiden inde i området",
+  "sess.need60": "60 min ikke nået endnu",
+  "sess.minleft": "min tilbage",
+  "sess.ok60": "60 min nået",
+  "sess.start": "Start aktivering",
+  "sess.restart": "Ny aktivering",
+  "sess.stop": "Stop & generér bevis",
+  "sess.gpx": "Hent GPX + resumé",
+  "sess.nopoints": "Ingen sporpunkter logget.",
+  "sess.pickfirst": "Vælg først et område.",
+  "sess.privacy": "Dit spor bliver på denne enhed. Intet sendes, før du eksporterer.",
+  "heat.title": "Aktiveringskort",
+  "heat.sub": "Hvilke områder trænger til opmærksomhed?",
+  "heat.byrecency": "Sidst aktiv",
+  "heat.byqso": "Antal QSO",
+  "heat.loading": "Indlæser statusdata…",
+  "heat.activated": "områder aktiveret",
+  "heat.never": "aldrig endnu",
+  "heat.long": "Aldrig / længe siden",
+  "heat.recent": "Aktiv for nylig",
+  "heat.few": "Få / aldrig",
+  "heat.many": "Mange QSO",
+  "heat.qsototal": "QSO i de indlæste år",
+  "heat.neglected": "Mest oversete områder",
+  "heat.neveryet": "aldrig aktiveret",
+  "heat.yearsago": "år siden",
+  "heat.cors": "Statusarket tillader ikke direkte forbindelse (CORS).",
+  "heat.fail": "Kunne ikke hente statusdata:",
+  "rules.title": "Regler & båndplan",
+  "rules.sub": "WWFF globalt og hvad ONFF tilføjer",
+  "rules.qso": "Minimum QSO",
+  "rules.dur": "Minimumsvarighed",
+  "rules.bound": "Grænse",
+  "rules.call": "Kaldesignal",
+  "rules.proof": "Bevis",
+  "rules.log": "Log-indsendelse",
+  "rules.pref": "WWFF-foretrukket",
+  "rules.mkwwff": "WWFF-foretrukken frekvens",
+  "rules.src": "Kilde: IARU Region 1-båndplan og WWFF Global Rules §14.7. Din licensklasse kan begrænse yderligere.",
+  "off.downloading": "Henter område…",
+  "off.tiles": "fliser",
+  "off.tilesoffline": "fliser tilgængelige offline.",
+  "off.saved": "Område gemt",
+  "off.cannot": "Offline-lagring er ikke mulig her",
+  "off.cannotsub": "Det virker kun, når Diana kører fra en webadresse.",
+  "off.zoomin": "Zoom lidt ind først",
+  "off.zoominsub": "Det aktuelle udsnit er for stort.",
+  "set.title": "Indstillinger",
+  "set.sub": "Bliver på denne enhed — intet sendes",
+  "set.you": "Din station",
+  "set.call": "Kaldesignal",
+  "set.portable": "Portabelt kaldesignal",
+  "set.grid": "Maidenhead-locator",
+  "set.gridfrom": "Hent fra GPS",
+  "set.gridbad": "Ikke en gyldig locator (fx JO21EE)",
+  "set.startview": "Kortets startvisning",
+  "set.fromgrid": "Ved din locator",
+  "set.fromcall": "Ved dit land (fra kaldesignalet)",
+  "set.wholemap": "Vis alt",
+  "set.saved": "Gemt på denne enhed",
+  "set.localonly": "Alt du indtaster her bliver i browseren på DENNE enhed. På en anden enhed skal du indtaste det igen.",
+  "rules.w.qso": "44 (club 200)",
+  "rules.w.dur": "—",
+  "rules.w.bound": "alt udstyr inden for grænsen",
+  "rules.w.call": "—",
+  "rules.w.proof": "—",
+  "rules.w.log": "—",
+  "rules.o.qso": "44, undtagen QRP",
+  "rules.o.dur": "60 min fra første QSO",
+  "rules.o.bound": "samme",
+  "rules.o.call": "/p eller /m for årsrangeringen",
+  "rules.o.proof": "2 fotos (maks. 600 px) eller 1 geotagget foto",
+  "rules.o.log": "ADIF til onfflogapproval@gmail.com"
+ },
+ "it": {
+  "lay.fit": "⤢ Mostra tutti gli spot",
+  "spots.unplaced": "senza posizione nota",
+  "nav.admin": "Gestione",
+  "adm.title": "Amministrazione",
+  "adm.sub": "Invia nuovi file sorgente al repository",
+  "adm.repo": "Repository",
+  "adm.owner": "Proprietario / repo",
+  "adm.branch": "Branch principale",
+  "adm.token": "Token di accesso",
+  "adm.remember": "Ricorda il token su questo dispositivo",
+  "adm.tokenwarn": "Un token nel browser è leggibile da chiunque abbia accesso a questo dispositivo. Usa un token fine-grained limitato a QUESTO repository, solo contenuti e pull request, con scadenza breve. Non su un computer condiviso.",
+  "adm.test": "Prova la connessione",
+  "adm.testing": "connessione…",
+  "adm.needboth": "Inserisci prima repository e token",
+  "adm.noperm": "Questo token non può scrivere qui",
+  "adm.upload": "Carica un file",
+  "adm.target": "Cartella di destinazione",
+  "adm.send": "Carica e apri una pull request",
+  "adm.uploadhint": "Il file finisce su un nuovo branch e diventa una pull request. I workflow lo convertono e mostrano il report e un’anteprima. Pubblicare resta il tuo clic.",
+  "adm.s1": "Lettura del branch base",
+  "adm.s2": "Lettura del file",
+  "adm.s3": "Invio del file a GitHub",
+  "adm.s4": "Aggiornamento dell’albero",
+  "adm.s5": "Creazione del commit",
+  "adm.s6": "Creazione del branch",
+  "adm.s7": "Apertura della pull request",
+  "adm.openpr": "Apri la pull request",
+  "adm.done": "Pull request creata",
+  "adm.failed": "Caricamento non riuscito",
+  "adm.unlocked": "Amministrazione sbloccata",
+  "adm.embed": "Incorpora in un sito",
+  "adm.embprov": "Provincia / regione",
+  "adm.emblang": "Lingua",
+  "adm.embspots": "Spot subito attivi",
+  "adm.copy": "Copia",
+  "adm.copied": "Copiato",
+  "adm.copyfail": "Copia non riuscita",
+  "nav.map": "Mappa",
+  "nav.spots": "Spots",
+  "nav.self": "Spot",
+  "nav.session": "Sessione",
+  "nav.heat": "Heatmap",
+  "nav.rules": "Regole",
+  "nav.settings": "Impostazioni",
+  "map.areas": "riferimenti WWFF",
+  "map.datafail": "Impossibile caricare i dati",
+  "search.ph": "Cerca per nome o numero…",
+  "search.none": "Nessun risultato",
+  "lay.title": "Livelli",
+  "lay.style": "Stile mappa",
+  "lay.onff": "Aree",
+  "lay.labels": "Numeri di riferimento",
+  "lay.spots": "Spot e agenda",
+  "lay.other": "BCA, BLHA…",
+  "lay.lang": "Lingua",
+  "lay.offline": "⤓ Salva quest’area offline",
+  "lay.spothint": "Gli spot arrivano da WWFF Spotline e si aggiornano ogni 30 s.",
+  "zone.area": "Superficie",
+  "zone.manager": "Gestore",
+  "zone.desig": "Designazione",
+  "zone.iucn": "Categoria IUCN",
+  "zone.reg": "Numero di registrazione",
+  "zone.since": "Designato dal",
+  "zone.parts": "Particelle",
+  "zone.partsnote": "Composta da {n} particelle separate. L’intera stazione deve stare dentro una di esse.",
+  "zone.overlap": "Questo punto è anche in {refs} — sei in più riferimenti contemporaneamente.",
+  "zone.spotme": "Spottati qui",
+  "gps.none": "GPS non disponibile",
+  "gps.nonesub": "Questo browser non condivide la posizione.",
+  "gps.searching": "Ricerca posizione…",
+  "gps.failed": "Posizione non riuscita",
+  "gps.inone": "Sei dentro il riferimento",
+  "gps.inmany": "Sei in {n} riferimenti",
+  "gps.toedge": "{d} m dal confine più vicino.",
+  "gps.nearedge": "Proprio al confine di {ref}",
+  "gps.nearedgesub": "±{d} m dal bordo, precisione GPS ±{a} m — verifica a vista.",
+  "gps.outside": "Sei fuori da ogni riferimento",
+  "gps.nearest": "Più vicino",
+  "spots.title": "Spot e agenda",
+  "spots.sub": "Chi è attivo ora e chi ha annunciato?",
+  "spots.tabnow": "In aria",
+  "spots.tabagenda": "Agenda",
+  "spots.world": "Mondiale",
+  "spots.loading": "caricamento…",
+  "spots.none": "Nessuno spot attivo in questa selezione.",
+  "spots.noagenda": "Nulla annunciato in questa selezione.",
+  "spots.now": "in corso",
+  "spots.until": "fino a",
+  "spots.announced": "annunci",
+  "spots.updated": "aggiornato alle",
+  "spot.freqmode": "Frequenza / modo",
+  "spot.area": "Riferimento",
+  "spot.locthere": "Locator lì",
+  "spot.locyou": "Il tuo locator",
+  "spot.remark": "Note",
+  "spot.fromyou": "direzione dalla tua posizione",
+  "spot.justnow": "appena spottato",
+  "spot.minago": "spottato {n} min fa",
+  "spot.nofix": "Premi ◎ per la tua posizione; qui appaiono direzione e distanza.",
+  "self.title": "Spottati",
+  "self.sub": "Invia uno spot via WWFF Spotline",
+  "self.prefilled": "precompilato dal riferimento scelto",
+  "self.activator": "Nominativo (attivatore)",
+  "self.spotter": "Spotter",
+  "self.ref": "Riferimento WWFF",
+  "self.freq": "Frequenza (kHz)",
+  "self.mode": "Modo",
+  "self.remarks": "Note (facoltativo)",
+  "self.send": "Invia spot",
+  "self.newtab": "Apre Spotline in una nuova scheda per vedere la loro conferma.",
+  "self.warn": "Niente ringraziamenti o richieste di banda. Ogni spot va al DX cluster; il resto è rumore. Spotline filtra anche il linguaggio inappropriato.",
+  "self.reftooshort": "almeno 7 caratteri",
+  "self.refchecking": "verifica riferimento…",
+  "self.refinactive": "✗ riferimento non attivo",
+  "self.refunknown": "✗ riferimento non trovato",
+  "self.refnocheck": "non verificabile — controlla anche Spotline",
+  "self.freqrange": "deve essere tra 135,7 e 7.500.000.000 kHz",
+  "self.segment": "segmento secondo il band plan",
+  "self.sent": "Spot inviato",
+  "sess.title": "Sessione di attivazione",
+  "sess.sub": "Scegli prima un riferimento",
+  "sess.unknown": "Posizione sconosciuta",
+  "sess.press": "Premi avvia; Diana segue la tua posizione.",
+  "sess.inside": "Dentro il riferimento",
+  "sess.outside": "Fuori dal riferimento",
+  "sess.pos": "La tua posizione è in",
+  "sess.outsidesub": "La tua posizione è fuori dal confine.",
+  "sess.rec": "Registrazione",
+  "sess.notstarted": "Non avviata",
+  "sess.points": "punti registrati",
+  "sess.started": "Avviata alle",
+  "sess.oftime": "del tempo dentro il riferimento",
+  "sess.need60": "60 min non ancora raggiunti",
+  "sess.minleft": "min rimanenti",
+  "sess.ok60": "60 min raggiunti",
+  "sess.start": "Avvia attivazione",
+  "sess.restart": "Nuova attivazione",
+  "sess.stop": "Ferma e genera prova",
+  "sess.gpx": "Scarica GPX + riepilogo",
+  "sess.nopoints": "Nessun punto registrato.",
+  "sess.pickfirst": "Scegli prima un riferimento.",
+  "sess.privacy": "La tua traccia resta su questo dispositivo. Nulla viene inviato finché non esporti.",
+  "heat.title": "Mappa di attività",
+  "heat.sub": "Quali riferimenti meritano attenzione?",
+  "heat.byrecency": "Ultima attività",
+  "heat.byqso": "Numero di QSO",
+  "heat.loading": "Caricamento dati…",
+  "heat.activated": "riferimenti mai attivati",
+  "heat.never": "mai",
+  "heat.long": "Mai / molto tempo fa",
+  "heat.recent": "Attivo di recente",
+  "heat.few": "Pochi / mai",
+  "heat.many": "Molti QSO",
+  "heat.qsototal": "QSO negli anni caricati",
+  "heat.neglected": "Riferimenti più trascurati",
+  "heat.neveryet": "mai attivato",
+  "heat.yearsago": "anni fa",
+  "heat.cors": "Il foglio di stato non consente la connessione diretta (CORS).",
+  "heat.fail": "Impossibile caricare i dati:",
+  "rules.title": "Regole e band plan",
+  "rules.sub": "WWFF nel mondo e cosa aggiunge ONFF",
+  "rules.qso": "QSO minimi",
+  "rules.dur": "Durata minima",
+  "rules.bound": "Confine",
+  "rules.call": "Nominativo",
+  "rules.proof": "Prova",
+  "rules.log": "Invio del log",
+  "rules.pref": "Preferita WWFF",
+  "rules.mkwwff": "Frequenza preferita WWFF",
+  "rules.src": "Fonte: band plan IARU Regione 1 e WWFF Global Rules §14.7. La tua classe di licenza può limitare oltre.",
+  "off.downloading": "Scaricamento area…",
+  "off.tiles": "tile",
+  "off.tilesoffline": "tile disponibili offline.",
+  "off.saved": "Area salvata",
+  "off.cannot": "Salvataggio offline non possibile",
+  "off.cannotsub": "Funziona solo quando Diana gira da un indirizzo web.",
+  "off.zoomin": "Prima ingrandisci un po’",
+  "off.zoominsub": "La vista attuale è troppo grande.",
+  "set.title": "Impostazioni",
+  "set.sub": "Resta su questo dispositivo — nulla viene inviato",
+  "set.you": "La tua stazione",
+  "set.call": "Nominativo",
+  "set.portable": "Nominativo portatile",
+  "set.grid": "Locator Maidenhead",
+  "set.gridfrom": "Prendi dal GPS",
+  "set.gridbad": "Locator non valido (es. JO21EE)",
+  "set.startview": "Vista iniziale della mappa",
+  "set.fromgrid": "Al tuo locator",
+  "set.fromcall": "Al tuo paese (dal nominativo)",
+  "set.wholemap": "Mostra tutto",
+  "set.saved": "Salvato su questo dispositivo",
+  "set.localonly": "Tutto ciò che inserisci resta nel browser di QUESTO dispositivo. Altrove va reinserito.",
+  "rules.w.qso": "44 (club 200)",
+  "rules.w.dur": "—",
+  "rules.w.bound": "tutta l’attrezzatura entro il confine",
+  "rules.w.call": "—",
+  "rules.w.proof": "—",
+  "rules.w.log": "—",
+  "rules.o.qso": "44, tranne QRP",
+  "rules.o.dur": "60 min dal primo QSO",
+  "rules.o.bound": "idem",
+  "rules.o.call": "/p o /m per la classifica annuale",
+  "rules.o.proof": "2 foto (max 600 px) o 1 foto geolocalizzata",
+  "rules.o.log": "ADIF a onfflogapproval@gmail.com"
+ },
+ "es": {
+  "lay.fit": "⤢ Ver todos los spots",
+  "spots.unplaced": "sin posición conocida",
+  "nav.admin": "Gestión",
+  "adm.title": "Administración",
+  "adm.sub": "Enviar nuevos archivos fuente al repositorio",
+  "adm.repo": "Repositorio",
+  "adm.owner": "Propietario / repo",
+  "adm.branch": "Rama principal",
+  "adm.token": "Token de acceso",
+  "adm.remember": "Recordar el token en este dispositivo",
+  "adm.tokenwarn": "Un token en el navegador lo puede leer cualquiera con acceso a este dispositivo. Usa un token fine-grained limitado a ESTE repositorio, solo contenido y pull requests, con caducidad corta. No en un ordenador compartido.",
+  "adm.test": "Probar la conexión",
+  "adm.testing": "conectando…",
+  "adm.needboth": "Rellena antes el repositorio y el token",
+  "adm.noperm": "Este token no puede escribir aquí",
+  "adm.upload": "Subir un archivo",
+  "adm.target": "Carpeta de destino",
+  "adm.send": "Subir y abrir una pull request",
+  "adm.uploadhint": "El archivo va a una rama nueva y se convierte en pull request. Los workflows lo convierten y muestran el informe y una vista previa. Publicar sigue siendo tu clic.",
+  "adm.s1": "Leyendo la rama base",
+  "adm.s2": "Leyendo el archivo",
+  "adm.s3": "Enviando el archivo a GitHub",
+  "adm.s4": "Actualizando el árbol",
+  "adm.s5": "Creando el commit",
+  "adm.s6": "Creando la rama",
+  "adm.s7": "Abriendo la pull request",
+  "adm.openpr": "Abrir la pull request",
+  "adm.done": "Pull request creada",
+  "adm.failed": "Error al subir",
+  "adm.unlocked": "Administración desbloqueada",
+  "adm.embed": "Incrustar en una web",
+  "adm.embprov": "Provincia / región",
+  "adm.emblang": "Idioma",
+  "adm.embspots": "Spots activados",
+  "adm.copy": "Copiar",
+  "adm.copied": "Copiado",
+  "adm.copyfail": "No se pudo copiar",
+  "nav.map": "Mapa",
+  "nav.spots": "Spots",
+  "nav.self": "Spot",
+  "nav.session": "Sesión",
+  "nav.heat": "Mapa de calor",
+  "nav.rules": "Reglas",
+  "nav.settings": "Ajustes",
+  "map.areas": "referencias WWFF",
+  "map.datafail": "No se pudieron cargar los datos",
+  "search.ph": "Buscar por nombre o número…",
+  "search.none": "Sin resultados",
+  "lay.title": "Capas",
+  "lay.style": "Estilo de mapa",
+  "lay.onff": "Zonas",
+  "lay.labels": "Números de referencia",
+  "lay.spots": "Spots y agenda",
+  "lay.other": "BCA, BLHA…",
+  "lay.lang": "Idioma",
+  "lay.offline": "⤓ Guardar esta zona sin conexión",
+  "lay.spothint": "Los spots vienen de WWFF Spotline y se actualizan cada 30 s.",
+  "zone.area": "Superficie",
+  "zone.manager": "Gestor",
+  "zone.desig": "Designación",
+  "zone.iucn": "Categoría UICN",
+  "zone.reg": "Número de registro",
+  "zone.since": "Designado desde",
+  "zone.parts": "Parcelas",
+  "zone.partsnote": "Formada por {n} parcelas separadas. Toda la estación debe estar dentro de una de ellas.",
+  "zone.overlap": "Este punto también está en {refs} — estás en varias referencias a la vez.",
+  "zone.spotme": "Spotéate aquí",
+  "gps.none": "GPS no disponible",
+  "gps.nonesub": "Este navegador no comparte la ubicación.",
+  "gps.searching": "Buscando la posición…",
+  "gps.failed": "No se pudo obtener la posición",
+  "gps.inone": "Estás dentro de la zona",
+  "gps.inmany": "Estás en {n} zonas",
+  "gps.toedge": "{d} m hasta el límite más cercano.",
+  "gps.nearedge": "Justo en el límite de {ref}",
+  "gps.nearedgesub": "±{d} m del borde, precisión GPS ±{a} m — comprueba visualmente.",
+  "gps.outside": "Estás fuera de toda zona",
+  "gps.nearest": "Más cercano",
+  "spots.title": "Spots y agenda",
+  "spots.sub": "¿Quién está activo y quién anuncia algo?",
+  "spots.tabnow": "En el aire",
+  "spots.tabagenda": "Agenda",
+  "spots.world": "Mundial",
+  "spots.loading": "cargando…",
+  "spots.none": "No hay spots activos en esta selección.",
+  "spots.noagenda": "Nada anunciado en esta selección.",
+  "spots.now": "en curso",
+  "spots.until": "hasta",
+  "spots.announced": "anuncios",
+  "spots.updated": "actualizado a las",
+  "spot.freqmode": "Frecuencia / modo",
+  "spot.area": "Zona",
+  "spot.locthere": "Locator allí",
+  "spot.locyou": "Tu locator",
+  "spot.remark": "Observación",
+  "spot.fromyou": "rumbo desde tu posición",
+  "spot.justnow": "spoteado ahora",
+  "spot.minago": "spoteado hace {n} min",
+  "spot.nofix": "Pulsa ◎ para tu posición; aquí aparecen rumbo y distancia.",
+  "self.title": "Spotéate",
+  "self.sub": "Envía un spot vía WWFF Spotline",
+  "self.prefilled": "rellenado desde la zona seleccionada",
+  "self.activator": "Indicativo (activador)",
+  "self.spotter": "Spotter",
+  "self.ref": "Referencia WWFF",
+  "self.freq": "Frecuencia (kHz)",
+  "self.mode": "Modo",
+  "self.remarks": "Observación (opcional)",
+  "self.send": "Enviar spot",
+  "self.newtab": "Abre Spotline en una pestaña nueva para ver su confirmación.",
+  "self.warn": "Nada de agradecimientos ni peticiones de banda. Cada spot va al DX cluster; lo demás es ruido. Spotline también filtra el lenguaje inapropiado.",
+  "self.reftooshort": "al menos 7 caracteres",
+  "self.refchecking": "comprobando referencia…",
+  "self.refinactive": "✗ referencia no activa",
+  "self.refunknown": "✗ referencia no encontrada",
+  "self.refnocheck": "no se pudo comprobar — Spotline también lo revisa",
+  "self.freqrange": "debe estar entre 135,7 y 7.500.000.000 kHz",
+  "self.segment": "segmento según el plan de bandas",
+  "self.sent": "Spot enviado",
+  "sess.title": "Sesión de activación",
+  "sess.sub": "Elige primero una zona",
+  "sess.unknown": "Posición desconocida",
+  "sess.press": "Pulsa iniciar; Diana sigue tu posición.",
+  "sess.inside": "Dentro de la zona",
+  "sess.outside": "Fuera de la zona",
+  "sess.pos": "Tu posición está en",
+  "sess.outsidesub": "Tu posición está fuera del límite.",
+  "sess.rec": "Grabando",
+  "sess.notstarted": "Sin iniciar",
+  "sess.points": "puntos registrados",
+  "sess.started": "Iniciada a las",
+  "sess.oftime": "del tiempo dentro de la zona",
+  "sess.need60": "60 min aún no alcanzados",
+  "sess.minleft": "min restantes",
+  "sess.ok60": "60 min alcanzados",
+  "sess.start": "Iniciar activación",
+  "sess.restart": "Nueva activación",
+  "sess.stop": "Detener y generar prueba",
+  "sess.gpx": "Descargar GPX + resumen",
+  "sess.nopoints": "No se registraron puntos.",
+  "sess.pickfirst": "Elige primero una zona.",
+  "sess.privacy": "Tu traza se queda en este dispositivo. No se envía nada hasta que exportes.",
+  "heat.title": "Mapa de actividad",
+  "heat.sub": "¿Qué zonas necesitan atención?",
+  "heat.byrecency": "Última actividad",
+  "heat.byqso": "Número de QSO",
+  "heat.loading": "Cargando datos…",
+  "heat.activated": "zonas ya activadas",
+  "heat.never": "nunca",
+  "heat.long": "Nunca / hace mucho",
+  "heat.recent": "Activo recientemente",
+  "heat.few": "Pocos / nunca",
+  "heat.many": "Muchos QSO",
+  "heat.qsototal": "QSO en los años cargados",
+  "heat.neglected": "Zonas más olvidadas",
+  "heat.neveryet": "nunca activada",
+  "heat.yearsago": "años",
+  "heat.cors": "La hoja de estado no permite conexión directa (CORS).",
+  "heat.fail": "No se pudieron cargar los datos:",
+  "rules.title": "Reglas y plan de bandas",
+  "rules.sub": "WWFF mundial y lo que añade ONFF",
+  "rules.qso": "QSO mínimos",
+  "rules.dur": "Duración mínima",
+  "rules.bound": "Límite",
+  "rules.call": "Indicativo",
+  "rules.proof": "Prueba",
+  "rules.log": "Envío del log",
+  "rules.pref": "Preferida WWFF",
+  "rules.mkwwff": "Frecuencia preferida WWFF",
+  "rules.src": "Fuente: plan de bandas IARU Región 1 y WWFF Global Rules §14.7. Tu clase de licencia puede restringir más.",
+  "off.downloading": "Descargando la zona…",
+  "off.tiles": "teselas",
+  "off.tilesoffline": "teselas disponibles sin red.",
+  "off.saved": "Zona guardada",
+  "off.cannot": "No se puede guardar sin conexión",
+  "off.cannotsub": "Solo funciona cuando Diana corre desde una dirección web.",
+  "off.zoomin": "Acerca un poco primero",
+  "off.zoominsub": "La vista actual es demasiado grande.",
+  "set.title": "Ajustes",
+  "set.sub": "Se queda en este dispositivo — nada se envía",
+  "set.you": "Tu estación",
+  "set.call": "Indicativo",
+  "set.portable": "Indicativo portátil",
+  "set.grid": "Locator Maidenhead",
+  "set.gridfrom": "Tomar del GPS",
+  "set.gridbad": "Locator no válido (ej. JO21EE)",
+  "set.startview": "Vista inicial del mapa",
+  "set.fromgrid": "En tu locator",
+  "set.fromcall": "En tu país (desde el indicativo)",
+  "set.wholemap": "Mostrar todo",
+  "set.saved": "Guardado en este dispositivo",
+  "set.localonly": "Todo lo que introduces se queda en el navegador de ESTE dispositivo. En otro habrá que repetirlo.",
+  "rules.w.qso": "44 (club 200)",
+  "rules.w.dur": "—",
+  "rules.w.bound": "todo el equipo dentro del límite",
+  "rules.w.call": "—",
+  "rules.w.proof": "—",
+  "rules.w.log": "—",
+  "rules.o.qso": "44, salvo QRP",
+  "rules.o.dur": "60 min desde el primer QSO",
+  "rules.o.bound": "ídem",
+  "rules.o.call": "/p o /m para el ranking anual",
+  "rules.o.proof": "2 fotos (máx 600 px) o 1 foto geoetiquetada",
+  "rules.o.log": "ADIF a onfflogapproval@gmail.com"
  }
 };
-let lang = (new URLSearchParams(location.search).get('lang')
-         || (navigator.language||'nl').slice(0,2).toLowerCase());
-if(!STR[lang]) lang = 'nl';
+
+/* Volgorde: wat de gebruiker koos > de browsertaal als we die spreken > Engels. */
+const LANGS = ['en','nl','fr','de','da','it','es'];
+function pickLang(){
+  const q = new URLSearchParams(location.search).get('lang');
+  if(q && STR[q]) return q;
+  const saved = (()=>{ try{ return localStorage.getItem('diana.lang'); }catch{ return null; } })();
+  if(saved && STR[saved]) return saved;
+  const nav = (navigator.language || 'en').slice(0,2).toLowerCase();
+  return STR[nav] ? nav : 'en';
+}
+let lang = pickLang();
 const t = k => (STR[lang] && STR[lang][k]) || STR.nl[k] || k;
+function locale(){ return {nl:'nl-BE',fr:'fr-BE',en:'en-GB',de:'de-DE',da:'da-DK',it:'it-IT',es:'es-ES'}[lang] || 'en-GB'; }
+
 function applyLang(){
   document.documentElement.lang = lang;
   document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
+  rerender();
+}
+
+/* Alles wat met JavaScript getekend is, opnieuw tekenen — anders blijft de helft
+   van het scherm in de oude taal staan. */
+function rerender(){
+  try{
+    if(zones) $('counts').innerHTML = `<b>${zones.features.length}</b> ${t('map.areas')}`;
+    if(selected) select(selected);
+    renderSpots();
+    renderRules();
+    renderSession();
+    selfPrefill();
+    if(heatLoaded) paintHeat();
+    if($('status').classList.contains('show')) $('status').classList.remove('show');
+  }catch(err){ console.warn('hertekenen:', err); }
 }
 
 
@@ -653,7 +2125,7 @@ async function loadData(){
     const b = bboxOf(f.geometry);
     return {...f.properties, bbox:b};
   });
-  $('counts').innerHTML = `<b>${zones.features.length}</b> ONFF-gebieden`;
+  $('counts').innerHTML = `<b>${zones.features.length}</b> ${t('map.areas')}`;
 }
 
 /* Eén labelpunt per referentie, op het grootste deelgebied — daar waar je in het
@@ -750,14 +2222,16 @@ function paintZones(){
 const dataReady = loadData().then(()=>{
   applyLang();
   [...$('langPick').children].forEach(b=>b.classList.toggle('on', b.dataset.lang===lang));
-  if(map.isStyleLoaded()) paintZones();
+  redrawOverlays();
+  loadSettingsUI();
+  applyHomeView();
   try{ applyEmbed(); }catch(err){ console.error('embed-parameters:', err); }
 }).catch(err=>{
-  $('counts').textContent = 'Gebiedsdata kon niet geladen worden';
+  $('counts').textContent = t('map.datafail');
   console.error('data:', err);
 });
 
-map.on('load', () => dataReady.then(()=>paintZones()));
+map.on('load', () => dataReady.then(redrawOverlays));
 map.on('error', e => {
   // Een ontbrekende achtergrondkaart mag de rest van de app niet meeslepen.
   if(String(e.error||'').match(/style|tile|glyph/i)) return;
@@ -768,7 +2242,8 @@ $('langPick').addEventListener('click', e=>{
   const b=e.target.closest('.seg[data-lang]'); if(!b) return;
   lang = b.dataset.lang;
   [...$('langPick').children].forEach(c=>c.classList.toggle('on',c===b));
-  applyLang(); renderRules(); renderSession(); if(heatLoaded) paintHeat();
+  saveSettings();
+  applyLang();
 });
 
 /* ---------- embed-modus: ?embed=1&prov=…&ref=…&lang=…&spots=1 ---------- */
@@ -793,19 +2268,45 @@ function applyEmbed(){
 }
 
 /* Bij een stijlwissel gaan alle eigen lagen weg — opnieuw tekenen. */
+let styleSwitching = false;
 function setStyle(name){
   currentStyle = name;
+  // setStyle is asynchroon. Vlak erna meldt isStyleLoaded() nog 'waar' voor de
+  // óude stijl; tekenden we dan, dan wiste de nieuwe stijl het meteen weer weg.
+  // 'idle' vuurt pas als de nieuwe stijl echt staat.
+  styleSwitching = true;
   map.setStyle(STYLE_URL(name));
-  // 'styledata' vuurt vóór de stijl echt klaar is; dan doet addLayer niets en
-  // verdwijnen de gebieden. Wachten tot isStyleLoaded() waar is.
-  map.once('styledata', function waitReady(){
-    if(!map.isStyleLoaded()){ setTimeout(waitReady, 80); return; }
-    paintZones();
-    if(showSpots) paintSpots();
-    applyVisibility();
-    reselect();
-    if(heatOnMap) applyHeatPaint(true);
-  });
+  map.once('idle', () => { styleSwitching = false; redrawOverlays(); });
+  map.once('styledata', () => setTimeout(() => { styleSwitching = false; redrawOverlays(); }, 400));
+}
+
+/* Eén plek die alles wat wíj op de kaart zetten opnieuw opbouwt.
+ *
+ * Twee dingen maakten dit eerder onbetrouwbaar. 'styledata' vuurt vóór de stijl
+ * echt klaar is — addLayer doet dan niets en de gebieden verdwijnen. En werd de
+ * spotslaag aangezet vóór de kaart geladen was (bijvoorbeeld via ?spots=1), dan
+ * viel paintSpots stil terug zonder ooit opnieuw te proberen.
+ *
+ * Daarom wacht deze functie tot de stijl én de data er zijn, en roept iedereen
+ * die iets wil tekenen gewoon dit aan. */
+let redrawPending = false;
+function redrawOverlays(){
+  if(redrawPending) return;
+  redrawPending = true;
+  (function attempt(tries){
+    if(styleSwitching || !map.isStyleLoaded() || !zones){
+      if(tries > 100){ redrawPending = false; return; }   // ~8 s, dan geven we het op
+      return void setTimeout(() => attempt(tries+1), 80);
+    }
+    redrawPending = false;
+    try{
+      paintZones();
+      if(showSpots) paintSpots();
+      applyVisibility();
+      reselect();
+      if(heatOnMap) applyHeatPaint(true);
+    }catch(err){ console.warn('hertekenen kaart:', err); }
+  })(0);
 }
 
 function applyVisibility(){
@@ -815,7 +2316,9 @@ function applyVisibility(){
   if(map.getLayer('onff-label'))
     map.setLayoutProperty('onff-label','visibility',(showZones&&showLabels)?'visible':'none');
   const sv = showSpots ? 'visible' : 'none';
-  ['spots-dot','spots-call'].forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',sv); });
+  ['spots-pulse','spots-icon','spots-call','agenda-dot','agenda-label',
+   'spot-arcs-line','agenda-arcs-line']
+    .forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',sv); });
 }
 
 /* ---------- selectie & detailpaneel ---------- */
@@ -832,12 +2335,12 @@ function markSelected(ref){
 }
 
 const FIELDS = [
-  ['area_ha','Oppervlakte', v=>`${v.toLocaleString('nl-BE')} ha`],
-  ['manager','Beheerder',   v=>v],
-  ['desig',  'Aanduiding',  v=>v],
-  ['iucn',   'IUCN-categorie', v=>v],
-  ['registration','Registratienummer', v=>v],
-  ['status_year','Aangeduid sinds', v=>v],
+  ['area_ha','zone.area', v=>`${v.toLocaleString(locale())} ha`],
+  ['manager','zone.manager',   v=>v],
+  ['desig',  'zone.desig',  v=>v],
+  ['iucn',   'zone.iucn', v=>v],
+  ['registration','zone.reg', v=>v],
+  ['status_year','zone.since', v=>v],
 ];
 
 function select(ref, alsoIn){
@@ -857,17 +2360,15 @@ function select(ref, alsoIn){
   const nParts = f.geometry.coordinates.length;
   $('facts').innerHTML = FIELDS
     .filter(([k])=>p[k]!==undefined && p[k]!==null && p[k]!=='')
-    .map(([k,label,fmt])=>`<div class="fact"><div class="k">${label}</div><div class="v">${fmt(p[k])}</div></div>`)
+    .map(([k,label,fmt])=>`<div class="fact"><div class="k">${t(label)}</div><div class="v">${fmt(p[k])}</div></div>`)
     .join('')
-    + (nParts>1 ? `<div class="fact"><div class="k">Percelen</div><div class="v">${nParts}</div></div>` : '');
+    + (nParts>1 ? `<div class="fact"><div class="k">${t('zone.parts')}</div><div class="v">${nParts}</div></div>` : '');
 
   const parts = f.geometry.coordinates.length;
   const notes = [];
-  if(parts > 1)
-    notes.push(`Bestaat uit ${parts} losse percelen. Je moet met je volledige station binnen één ervan staan.`);
+  if(parts > 1) notes.push(t('zone.partsnote').replace('{n}', parts));
   const overlap = (alsoIn||[]).filter(r=>r!==ref);
-  if(overlap.length)
-    notes.push(`Dit punt ligt ook in ${overlap.join(', ')} — je staat dan in meerdere referenties tegelijk.`);
+  if(overlap.length) notes.push(t('zone.overlap').replace('{refs}', overlap.join(', ')));
   $('zoneNote').textContent = notes.join(' ');
 
   markSelected(ref);
@@ -878,6 +2379,8 @@ function select(ref, alsoIn){
 }
 
 function openSheet(){
+  // Twee panelen onderaan tegelijk is op een gsm onleesbaar.
+  if($('viewHeat').classList.contains('on')) $('viewHeat').classList.add('tucked');
   const el = $('sheet');
   el.classList.add('open');
   // De hoogte varieert met het aantal feiten, dus meten na het renderen.
@@ -887,8 +2390,13 @@ function openSheet(){
 function closeSheet(){
   $('sheet').classList.remove('open');
   document.body.classList.remove('sheet-open');
+  $('viewHeat').classList.remove('tucked');
 }
 $('closeSheet').onclick = closeSheet;
+$('zoneSpot').onclick = () => {
+  closeSheet();
+  document.querySelector('#nav button[data-view="viewSelf"]').click();
+};
 map.on('click', e => {                       // klik naast een gebied sluit het paneel
   if(!map.queryRenderedFeatures(e.point,{layers:map.getLayer('onff-fill')?['onff-fill']:[]}).length) closeSheet();
 });
@@ -933,6 +2441,10 @@ $('btnSearch').onclick = ()=>toggle('search');
 $('btnStyle').onclick  = ()=>toggle('style');
 $('btnLayers').onclick = ()=>toggle('layers');
 $('btnOffline').onclick = prefetchArea;
+$('btnFit').onclick = () => { toggle(null); if(!showSpots){ showSpots = true;
+  const o=document.querySelector('[data-layer="spots"]');
+  if(o){o.classList.add('on');o.querySelector('.sw').classList.add('on');}
+  startSpots(); } fitSpots(); };
 
 $('popStyle').addEventListener('click', e => {
   const opt = e.target.closest('.opt'); if(!opt) return;
@@ -945,7 +2457,7 @@ $('popLayers').addEventListener('click', e => {
   const opt = e.target.closest('.opt[data-layer]'); if(!opt) return;
   if(opt.dataset.layer==='onff') showZones = !showZones;
   if(opt.dataset.layer==='labels') showLabels = !showLabels;
-  if(opt.dataset.layer==='spots'){ showSpots = !showSpots; if(showSpots) startSpots(); }
+  if(opt.dataset.layer==='spots'){ showSpots = !showSpots; if(showSpots){ startSpots(); redrawOverlays(); } }
   opt.classList.toggle('on');
   opt.querySelector('.sw').classList.toggle('on');
   applyVisibility();
@@ -959,10 +2471,12 @@ $('popLayers').addEventListener('click', e => {
  * ------------------------------------------------------------------ */
 const SPOTS_URL  = 'https://spots.wwff.co/static/spots.json';
 const AGENDA_URL = 'https://spots.wwff.co/static/agendas_active.json';
+const AGENDA_ALL = 'https://spots.wwff.co/static/agendas.json';
 const REFRESH_MS = 30000;
 
 let spots = [], agenda = [], spotsAt = null, spotsError = null;
 let showSpots = false, spotFilter = 'onff', spotTab = 'spots', spotTimer = null, here = null;
+let agendaSkipped = 0;
 
 function startSpots(){
   if(spotTimer) return;
@@ -971,12 +2485,18 @@ function startSpots(){
 }
 async function fetchSpots(){
   try{
-    const [s,a] = await Promise.all([
+    // Spotline stelt drie bestanden ter beschikking; we gebruiken ze alle drie.
+    const [s,a,all] = await Promise.all([
       fetch(SPOTS_URL,{cache:'no-store'}).then(r=>r.json()),
-      fetch(AGENDA_URL,{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
+      fetch(AGENDA_URL,{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
+      fetch(AGENDA_ALL,{cache:'no-store'}).then(r=>r.json()).catch(()=>[])
     ]);
     spots = Array.isArray(s) ? s : [];
-    agenda = Array.isArray(a) ? a : [];
+    // Lopende activaties eerst, daarna de aangekondigde die nog moeten komen.
+    const active = Array.isArray(a) ? a : [];
+    const later  = (Array.isArray(all) ? all : []).filter(x =>
+      !active.some(y => String(y.id) === String(x.id)));
+    agenda = active.concat(later);
     spotsAt = new Date(); spotsError = null;
   }catch(err){
     // Een TypeError zonder statuscode betekent bijna altijd: door CORS geblokkeerd.
@@ -996,37 +2516,195 @@ const visibleSpots = () => spots
 function ageMin(s){ return (Date.now()/1000 - (s.spot_time||0)) / 60; }
 function agoText(s){
   const m = Math.max(0, Math.round(ageMin(s)));
-  return m < 1 ? 'zopas gespot' : `${m} min geleden gespot`;
+  return m < 1 ? t('spot.justnow') : t('spot.minago').replace('{n}', m);
 }
 
+/* Waar sta ik? GPS als die er is, anders de locator uit de instellingen.
+   Zonder een van beide tekenen we geen booglijnen — dan is er geen vertrekpunt. */
+function myPos(){
+  if(here) return [here.lon, here.lat];
+  const ll = gridToLatLon(cfg.grid);
+  return ll || null;
+}
+
+/* Grootcirkelboog tussen twee punten, als een reeks tussenpunten.
+   Rechte lijnen op een Mercatorkaart zijn geen echte peilingen; over 2000 km
+   scheelt dat zichtbaar. Splitst netjes op de datumgrens. */
+function greatCircle(from, to, steps){
+  const rad = Math.PI/180, deg = 180/Math.PI;
+  const [lon1,lat1] = from.map(v=>v*rad), [lon2,lat2] = to.map(v=>v*rad);
+  const d = 2*Math.asin(Math.sqrt(
+    Math.sin((lat2-lat1)/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin((lon2-lon1)/2)**2));
+  if(!isFinite(d) || d === 0) return [[from, to]];
+  const n = steps || Math.max(16, Math.min(128, Math.round(d*deg)));
+  const pts = [];
+  for(let i=0;i<=n;i++){
+    const f = i/n;
+    const A = Math.sin((1-f)*d)/Math.sin(d), B = Math.sin(f*d)/Math.sin(d);
+    const x = A*Math.cos(lat1)*Math.cos(lon1) + B*Math.cos(lat2)*Math.cos(lon2);
+    const y = A*Math.cos(lat1)*Math.sin(lon1) + B*Math.cos(lat2)*Math.sin(lon2);
+    const z = A*Math.sin(lat1) + B*Math.sin(lat2);
+    pts.push([Math.atan2(y,x)*deg, Math.atan2(z, Math.sqrt(x*x+y*y))*deg]);
+  }
+  // Op de datumgrens de lijn in stukken knippen, anders trekt hij over de hele kaart.
+  const parts = [[]];
+  for(let i=0;i<pts.length;i++){
+    if(i && Math.abs(pts[i][0] - pts[i-1][0]) > 180) parts.push([]);
+    parts[parts.length-1].push(pts[i]);
+  }
+  return parts.filter(pp => pp.length > 1);
+}
+
+/* Een agenda-item heeft géén coördinaten in het Spotline-bestand. Voor ONFF-
+   referenties kennen we het middelpunt uit onze eigen data; voor de rest niet,
+   en die laten we dan van de kaart weg in plaats van ze te verzinnen. */
+function refPosition(ref){
+  if(!ref || !zones) return null;
+  const f = zones.features.find(x => x.properties.ref === String(ref).toUpperCase());
+  if(!f) return null;
+  const b = bboxOf(f.geometry);
+  return [(b[0]+b[2])/2, (b[1]+b[3])/2];
+}
+
+/* Het icoontje: een groene schijf met een antenne erop, als kaartafbeelding.
+   Na een stijlwissel zijn afbeeldingen weg, dus dit wordt opnieuw aangeroepen. */
+function addSpotIcon(){
+  if(map.hasImage('diana-spot')) return;
+  const S = 48, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1b4332';
+  g.beginPath(); g.arc(S/2, S/2, S/2 - 3, 0, Math.PI*2); g.fill();
+  g.strokeStyle = '#fff'; g.lineWidth = 3; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(S/2, S*0.72); g.lineTo(S/2, S*0.34); g.stroke();       // mast
+  g.beginPath(); g.moveTo(S*0.34, S*0.44); g.lineTo(S*0.66, S*0.44); g.stroke(); // dipool
+  g.lineWidth = 2.4;
+  g.beginPath(); g.arc(S/2, S*0.34, S*0.16, Math.PI*1.15, Math.PI*1.85); g.stroke(); // straling
+  g.beginPath(); g.arc(S/2, S*0.34, S*0.26, Math.PI*1.2, Math.PI*1.8); g.stroke();
+  map.addImage('diana-spot', {width:S, height:S, data:g.getImageData(0,0,S,S).data});
+}
+
+let pulsePhase = 0, pulseTimer = null;
+
 function paintSpots(){
-  const fc = {type:'FeatureCollection', features: visibleSpots().map(s=>({
+  if(!map.isStyleLoaded() || !zones){ redrawOverlays(); return; }
+  addSpotIcon();
+
+  const mine = myPos();
+  const live = visibleSpots();
+
+  // ---- lopende spots ----
+  const spotFC = {type:'FeatureCollection', features: live.map(s => ({
     type:'Feature',
-    properties:{ id:s.id, call:s.activator, ref:s.reference, khz:s.frequency_khz,
-                 mode:s.mode, stale: ageMin(s) > 30 },
-    geometry:{type:'Point',coordinates:[s.longitude,s.latitude]}
+    properties:{ id:s.id, call:s.activator||'?', ref:s.reference||'',
+                 khz:s.frequency_khz||'', mode:s.mode||'', stale: ageMin(s) > 30 },
+    geometry:{type:'Point', coordinates:[s.longitude, s.latitude]}
   }))};
-  if(map.getSource('spots')) { map.getSource('spots').setData(fc); applyVisibility(); return; }
-  if(!map.isStyleLoaded()) return;
-  map.addSource('spots',{type:'geojson',data:fc});
-  map.addLayer({
-    id:'spots-dot', type:'circle', source:'spots',
-    paint:{
-      'circle-radius':['interpolate',['linear'],['zoom'],5,5,12,9],
-      'circle-color':['case',['get','stale'],'#c9c3b4','#d97706'],
-      'circle-stroke-color':'#fff','circle-stroke-width':2
+
+  // ---- aangekondigde activaties, enkel die we kunnen plaatsen ----
+  const nowUTC = new Date().toISOString().slice(0,19).replace('T',' ');
+  const agendaPlaced = [];
+  agendaSkipped = 0;
+  for(const a of agenda){
+    if(spotFilter !== 'all' && !isONFF(a.reference)) continue;
+    if(a.utc_end && a.utc_end < nowUTC) continue;
+    const pos = refPosition(a.reference);
+    if(!pos){ agendaSkipped++; continue; }
+    agendaPlaced.push({...a, _pos:pos});
+  }
+  const agFC = {type:'FeatureCollection', features: agendaPlaced.map(a => ({
+    type:'Feature',
+    properties:{ call:a.activator_call||'?', ref:a.reference||'',
+                 band:a.band||'', when:(a.utc_start||'').slice(5,16) },
+    geometry:{type:'Point', coordinates:a._pos}
+  }))};
+
+  // ---- booglijnen vanaf de eigen positie ----
+  const arcs = (kind, items) => ({type:'FeatureCollection', features: mine ? items.flatMap(it => {
+    const to = kind === 'spot' ? [it.longitude, it.latitude] : it._pos;
+    if(!to || (Math.abs(to[0]-mine[0]) < 1e-6 && Math.abs(to[1]-mine[1]) < 1e-6)) return [];
+    return greatCircle(mine, to).map(line => ({
+      type:'Feature', properties:{}, geometry:{type:'LineString', coordinates:line}
+    }));
+  }) : []});
+
+  const sources = {
+    'spots':      spotFC,
+    'agenda-pts': agFC,
+    'spot-arcs':  arcs('spot', live),
+    'agenda-arcs':arcs('agenda', agendaPlaced),
+  };
+  for(const [id, data] of Object.entries(sources)){
+    if(map.getSource(id)) map.getSource(id).setData(data);
+    else map.addSource(id, {type:'geojson', data});
+  }
+
+  if(!map.getLayer('spot-arcs-line')){
+    map.addLayer({ id:'agenda-arcs-line', type:'line', source:'agenda-arcs',
+      paint:{'line-color':'#f0a868','line-width':1,'line-opacity':0.75,'line-dasharray':[1,2.5]}});
+    map.addLayer({ id:'spot-arcs-line', type:'line', source:'spot-arcs',
+      paint:{'line-color':'#2d6a4f','line-width':1.6,'line-opacity':0.65}});
+
+    map.addLayer({ id:'agenda-dot', type:'circle', source:'agenda-pts',
+      paint:{'circle-radius':6,'circle-color':'#fdeadb','circle-opacity':0.9,
+             'circle-stroke-color':'#e08a3c','circle-stroke-width':1.4}});
+
+    // De knipperende "uitstraling" onder het icoontje.
+    map.addLayer({ id:'spots-pulse', type:'circle', source:'spots',
+      filter:['!',['get','stale']],
+      paint:{'circle-radius':10,'circle-color':'#52b788','circle-opacity':0.35,'circle-blur':0.4}});
+
+    map.addLayer({ id:'spots-icon', type:'symbol', source:'spots',
+      layout:{'icon-image':'diana-spot','icon-allow-overlap':true,
+              'icon-size':['interpolate',['linear'],['zoom'],4,0.32,10,0.5]},
+      paint:{'icon-opacity':['case',['get','stale'],0.45,1]}});
+
+    if(map.getStyle().glyphs){
+      map.addLayer({ id:'agenda-label', type:'symbol', source:'agenda-pts',
+        layout:{'text-field':['concat',['get','call'],'  ',['get','when']],
+                'text-font':['Noto Sans Regular'],'text-size':10,
+                'text-offset':[0,1.4],'text-anchor':'top'},
+        paint:{'text-color':'#b45309','text-halo-color':'#fff','text-halo-width':1.6}});
+      map.addLayer({ id:'spots-call', type:'symbol', source:'spots',
+        layout:{'text-field':['case',['==',['get','khz'],''],['get','call'],
+                              ['concat',['get','call'],'\n',['to-string',['get','khz']],' ',['get','mode']]],
+                'text-font':['Noto Sans Regular'],'text-size':11,'text-line-height':1.1,
+                'text-offset':[0,1.5],'text-anchor':'top','text-allow-overlap':false},
+        paint:{'text-color':'#1b4332','text-halo-color':'#f6f4ee','text-halo-width':1.8}});
     }
-  });
-  if(map.getStyle().glyphs) map.addLayer({
-    id:'spots-call', type:'symbol', source:'spots',
-    layout:{'text-field':['get','call'],'text-font':['Noto Sans Regular'],'text-size':11,
-            'text-offset':[0,1.3],'text-anchor':'top','text-allow-overlap':false},
-    paint:{'text-color':'#92400e','text-halo-color':'#fff','text-halo-width':1.8}
-  });
-  map.on('click','spots-dot', e => openSpot(e.features[0].properties.id));
-  map.on('mouseenter','spots-dot',()=>map.getCanvas().style.cursor='pointer');
-  map.on('mouseleave','spots-dot',()=>map.getCanvas().style.cursor='');
+
+    if(!paintSpots._bound){
+      paintSpots._bound = true;
+      map.on('click','spots-icon', e => openSpot(e.features[0].properties.id));
+      map.on('mouseenter','spots-icon',()=>map.getCanvas().style.cursor='pointer');
+      map.on('mouseleave','spots-icon',()=>map.getCanvas().style.cursor='');
+    }
+  }
+
+  startPulse();
   applyVisibility();
+}
+
+/* Knipperen: één timer, alleen zolang de laag zichtbaar is en het tabblad open. */
+function startPulse(){
+  if(pulseTimer) return;
+  pulseTimer = setInterval(() => {
+    if(!showSpots || document.hidden || !map.getLayer('spots-pulse')) return;
+    pulsePhase = (pulsePhase + 1) % 20;
+    const f = pulsePhase / 20;
+    map.setPaintProperty('spots-pulse','circle-radius', 9 + f*14);
+    map.setPaintProperty('spots-pulse','circle-opacity', 0.38 * (1 - f));
+  }, 90);
+}
+
+/* Alles in beeld brengen: eigen positie plus alle zichtbare spots. */
+function fitSpots(){
+  const pts = visibleSpots().map(s => [s.longitude, s.latitude]);
+  const mine = myPos(); if(mine) pts.push(mine);
+  if(!pts.length){ showStatus('out', t('spots.none'), ''); return; }
+  const b = pts.reduce((a,[x,y]) => [Math.min(a[0],x),Math.min(a[1],y),Math.max(a[2],x),Math.max(a[3],y)],
+                       [180,90,-180,-90]);
+  map.fitBounds([[b[0],b[1]],[b[2],b[3]]], {padding:60, maxZoom:11, duration:800});
 }
 
 /* ---------- richting, afstand, locator ---------- */
@@ -1054,7 +2732,7 @@ function renderSpots(){
   if(spotTab==='agenda') return renderAgenda(list, meta);
   if(spotsError){
     list.innerHTML = `<p class="hint" style="color:#b45309">${spotsError}</p>`;
-    meta.textContent = spotsAt ? `Laatst gelukt om ${spotsAt.toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'})}` : '';
+    meta.textContent = spotsAt ? `${t('spots.updated')} ${spotsAt.toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})}` : '';
     return;
   }
   const rows = visibleSpots().sort((a,b)=>{
@@ -1069,9 +2747,9 @@ function renderSpots(){
       <span class="who"><div class="c">${s.activator||'?'}</div>
         <div class="f">${s.frequency_khz||'?'} kHz · ${s.mode||'?'} · ${s.reference||''}</div></span>
       <span class="d">${d}</span></div>`;
-  }).join('') : '<p class="hint">Geen actieve spots in deze selectie.</p>';
+  }).join('') : `<p class="hint">${t('spots.none')}</p>`;
   meta.textContent = spotsAt
-    ? `${rows.length} spots · ${t('spots.updated')} ${spotsAt.toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'})}`
+    ? `${rows.length} spots · ${t('spots.updated')} ${spotsAt.toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})}`
     : t('spots.loading');
 }
 function dist(s){ return here ? haversine(here.lat,here.lon,s.latitude,s.longitude) : Infinity; }
@@ -1097,9 +2775,10 @@ function renderAgenda(list, meta){
         running ? t('spots.until')+' '+(a.utc_end||'').slice(11,16) : (a.utc_start||'').slice(11,16)+' UTC'}</span>
     </div>`;
   }).join('') : `<p class="hint">${t('spots.noagenda')}</p>`;
-  meta.textContent = spotsAt
-    ? `${rows.length} ${t('spots.announced')} · ${t('spots.updated')} ${spotsAt.toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'})}`
-    : '';
+  meta.textContent = (spotsAt
+    ? `${rows.length} ${t('spots.announced')} · ${t('spots.updated')} ${spotsAt.toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'})}`
+    : '')
+    + (agendaSkipped ? ` · ${agendaSkipped} ${t('spots.unplaced')}` : '');
 }
 
 
@@ -1123,16 +2802,17 @@ $('spotFilter').addEventListener('click', e=>{
 function openSpot(id){
   const s = spots.find(x=>Number(x.id)===Number(id)); if(!s) return;
   closeSheet();
+  if($('viewHeat').classList.contains('on')) $('viewHeat').classList.add('tucked');
   $('spCall').textContent = s.activator || '?';
   $('spAgo').textContent  = agoText(s) + (s.spotter ? ` door ${s.spotter}` : '');
   $('spRef').textContent  = s.reference || '';
   const facts = [
-    ['Frequentie / mode', `${s.frequency_khz||'?'} kHz · ${s.mode||'?'}`],
-    ['Gebied', s.reference_name || s.reference || '—'],
-    ['Locator daar', locator(s.latitude,s.longitude)],
+    [t('spot.freqmode'), `${s.frequency_khz||'?'} kHz · ${s.mode||'?'}`],
+    [t('spot.area'), s.reference_name || s.reference || '—'],
+    [t('spot.locthere'), locator(s.latitude,s.longitude)],
   ];
-  if(here) facts.push(['Jouw locator', locator(here.lat,here.lon)]);
-  if(s.remarks) facts.push(['Opmerking', s.remarks, true]);
+  if(here) facts.push([t('spot.locyou'), locator(here.lat,here.lon)]);
+  if(s.remarks) facts.push([t('spot.remark'), s.remarks, true]);
   $('spFacts').innerHTML = facts.map(([k,v,wide])=>
     `<div class="fact${wide?' wide':''}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
 
@@ -1141,16 +2821,20 @@ function openSpot(id){
     $('spBearing').innerHTML =
       `<span class="compass"><span class="n">N</span><span class="needle" style="transform:translate(-50%,-100%) rotate(${br.toFixed(0)}deg)"></span></span>
        <span><div class="bg">${Math.round(br)}° · ${fmtKm(dist(s))}</div>
-       <div class="bs">${compassName(br)} — richting vanaf jouw locatie</div></span>`;
+       <div class="bs">${compassName(br)} — ${t('spot.fromyou')}</div></span>`;
   } else {
-    $('spBearing').innerHTML = `<span class="bs">Druk op ◎ om je eigen locatie te bepalen; dan verschijnt hier richting en afstand.</span>`;
+    $('spBearing').innerHTML = `<span class="bs">${t('spot.nofix')}</span>`;
   }
   $('spotSheet').classList.add('open');
   document.body.classList.add('sheet-open');
   requestAnimationFrame(()=>document.body.style.setProperty('--sheet-h',$('spotSheet').offsetHeight+'px'));
   map.easeTo({center:[s.longitude,s.latitude], zoom:Math.max(map.getZoom(),9)});
 }
-$('closeSpot').onclick = ()=>{ $('spotSheet').classList.remove('open'); document.body.classList.remove('sheet-open'); };
+$('closeSpot').onclick = ()=>{
+  $('spotSheet').classList.remove('open');
+  document.body.classList.remove('sheet-open');
+  $('viewHeat').classList.remove('tucked');
+};
 
 
 /* ================================================================== *
@@ -1169,16 +2853,506 @@ $('nav').addEventListener('click', e=>{
       const o=document.querySelector('[data-layer="spots"]');
       if(o){ o.classList.add('on'); o.querySelector('.sw').classList.add('on'); }
     }
-    startSpots(); renderSpots(); applyVisibility();
+    startSpots(); renderSpots(); redrawOverlays();
   }
   if(b.dataset.view==='viewHeat'){ loadHeat(); }
   else { applyHeatPaint(false); }
   if(b.dataset.view==='viewRules') renderRules();
   if(b.dataset.view==='viewSession') renderSession();
+  if(b.dataset.view==='viewSelf') selfPrefill();
+  if(b.dataset.view==='viewSet') loadSettingsUI();
+  if(b.dataset.view==='viewAdmin') buildEmbed();
   // Alleen bijwerken wanneer de kaart echt van formaat verandert; een resize per
   // klik kost een frame en levert niets op.
   requestAnimationFrame(()=>{ map.resize(); map.triggerRepaint(); });
 });
+
+
+
+/* ================================================================== *
+ * Instellingen — alles in localStorage van dít toestel
+ * ================================================================== */
+const remember = (k,v) => { try{ localStorage.setItem('diana.'+k, v==null?'':String(v)); }catch{} };
+const recall   = k => { try{ return localStorage.getItem('diana.'+k) || ''; }catch{ return ''; } };
+const GRID_RE = /^[A-R]{2}[0-9]{2}([A-X]{2})?$/i;
+
+const cfg = {
+  call:  recall('call'),
+  callp: recall('callp'),
+  grid:  recall('grid'),
+  view:  recall('view') || 'grid',
+};
+
+function saveSettings(){
+  remember('call',  cfg.call);
+  remember('callp', cfg.callp);
+  remember('grid',  cfg.grid);
+  remember('view',  cfg.view);
+  remember('lang',  lang);
+}
+
+function loadSettingsUI(){
+  $('setCall').value  = cfg.call;
+  $('setCallP').value = cfg.callp;
+  $('setGrid').value  = cfg.grid;
+  [...$('setView').children].forEach(b => b.classList.toggle('on', b.dataset.view2 === cfg.view));
+  checkGrid();
+}
+
+function checkGrid(){
+  const v = $('setGrid').value.trim().toUpperCase();
+  const fb = $('fbGrid');
+  if(!v){ fb.textContent=''; fb.className='fb'; $('setGrid').className=''; return true; }
+  const ok = GRID_RE.test(v);
+  fb.textContent = ok ? '' : t('set.gridbad');
+  fb.className = 'fb' + (ok ? '' : ' bad');
+  $('setGrid').className = ok ? 'good' : 'bad';
+  return ok;
+}
+
+['setCall','setCallP','setGrid'].forEach(id => $(id).addEventListener('input', e => {
+  const pos = e.target.selectionStart;
+  e.target.value = e.target.value.toUpperCase();
+  e.target.setSelectionRange(pos,pos);
+  cfg.call  = $('setCall').value.trim();
+  cfg.callp = $('setCallP').value.trim();
+  cfg.grid  = $('setGrid').value.trim();
+  checkGrid();
+  saveSettings();
+}));
+$('setView').addEventListener('click', e => {
+  const b = e.target.closest('.seg[data-view2]'); if(!b) return;
+  cfg.view = b.dataset.view2;
+  [...$('setView').children].forEach(c => c.classList.toggle('on', c===b));
+  saveSettings();
+});
+$('setGridGps').onclick = () => {
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    cfg.grid = locator(pos.coords.latitude, pos.coords.longitude);
+    $('setGrid').value = cfg.grid; checkGrid(); saveSettings();
+  });
+};
+
+/* ---------- locator → coördinaten ---------- */
+function gridToLatLon(g){
+  g = (g||'').toUpperCase();
+  if(!GRID_RE.test(g)) return null;
+  const A = 'A'.charCodeAt(0);
+  let lon = (g.charCodeAt(0)-A)*20 - 180;
+  let lat = (g.charCodeAt(1)-A)*10 - 90;
+  lon += parseInt(g[2],10)*2;
+  lat += parseInt(g[3],10)*1;
+  if(g.length >= 6){
+    lon += (g.charCodeAt(4)-A)*(5/60);
+    lat += (g.charCodeAt(5)-A)*(2.5/60);
+    lon += 2.5/60; lat += 1.25/60;
+  } else { lon += 1; lat += 0.5; }
+  return [lon, lat];
+}
+
+/* Roepnaamprefix → ruwe landsligging. Genoeg om de kaart op het juiste land te
+   openen; niet bedoeld als DXCC-tabel. Uitbreidbaar wanneer Diana Europees wordt. */
+const PREFIX_HOME = {
+  ON:[4.47,50.85,7.2], OO:[4.47,50.85,7.2], OP:[4.47,50.85,7.2], OQ:[4.47,50.85,7.2],
+  OR:[4.47,50.85,7.2], OS:[4.47,50.85,7.2], OT:[4.47,50.85,7.2],
+  PA:[5.3,52.2,7], PB:[5.3,52.2,7], PC:[5.3,52.2,7], PD:[5.3,52.2,7], PE:[5.3,52.2,7],
+  PH:[5.3,52.2,7], PI:[5.3,52.2,7],
+  DA:[10.4,51.2,6], DB:[10.4,51.2,6], DC:[10.4,51.2,6], DD:[10.4,51.2,6], DF:[10.4,51.2,6],
+  DG:[10.4,51.2,6], DH:[10.4,51.2,6], DJ:[10.4,51.2,6], DK:[10.4,51.2,6], DL:[10.4,51.2,6],
+  DM:[10.4,51.2,6], DO:[10.4,51.2,6],
+  F:[2.4,46.6,5.5], TM:[2.4,46.6,5.5],
+  G:[-2.0,53.5,5.6], M:[-2.0,53.5,5.6], '2E':[-2.0,53.5,5.6],
+  EI:[-8.0,53.3,6.5], EJ:[-8.0,53.3,6.5],
+  LX:[6.1,49.8,9], HB:[8.2,46.8,7.4], OE:[13.3,47.6,6.8],
+  OZ:[10.0,56.0,6.4], '5Q':[10.0,56.0,6.4], OU:[10.0,56.0,6.4],
+  SM:[15.5,62.0,4.6], SA:[15.5,62.0,4.6], LA:[9.0,64.5,4.4], OH:[26.0,64.5,4.6],
+  I:[12.5,42.5,5.3], IK:[12.5,42.5,5.3], IZ:[12.5,42.5,5.3], IW:[12.5,42.5,5.3],
+  EA:[-3.7,40.2,5.5], EB:[-3.7,40.2,5.5], EC:[-3.7,40.2,5.5],
+  CT:[-8.0,39.5,6.2], SP:[19.3,52.0,5.8], OK:[15.5,49.8,6.5], OM:[19.5,48.7,6.8],
+  HA:[19.4,47.2,6.6], YO:[25.0,45.9,6.2], LZ:[25.3,42.7,6.6], SV:[23.7,38.5,5.8],
+  YL:[24.6,56.9,6.5], ES:[25.5,58.7,6.6], LY:[23.9,55.3,6.6],
+};
+
+function homeView(){
+  if(cfg.view === 'all') return null;
+  if(cfg.view === 'grid'){
+    const ll = gridToLatLon(cfg.grid);
+    if(ll) return {center:ll, zoom:10};
+  }
+  const call = (cfg.call || cfg.callp || '').toUpperCase().split('/')[0];
+  for(const len of [3,2,1]){
+    const key = call.slice(0,len);
+    if(PREFIX_HOME[key]){
+      const [lon,lat,z] = PREFIX_HOME[key];
+      return {center:[lon,lat], zoom:z};
+    }
+  }
+  const ll = gridToLatLon(cfg.grid);
+  if(ll) return {center:ll, zoom:10};
+  return null;   // onbekend → dataBounds() beslist
+}
+
+/* Kennen we het land niet, dan tonen we niet de wereldbol maar precies het gebied
+   waarvoor er data ís. Nu is dat België; wordt Diana Europees, dan schuift dit
+   vanzelf mee zonder dat er iets aangepast moet worden. */
+function dataBounds(){
+  if(!index || !index.length) return null;
+  return index.reduce((a,z) => [Math.min(a[0],z.bbox[0]), Math.min(a[1],z.bbox[1]),
+                                Math.max(a[2],z.bbox[2]), Math.max(a[3],z.bbox[3])],
+                      [180,90,-180,-90]);
+}
+
+function applyHomeView(){
+  const v = homeView();
+  if(v){ map.jumpTo(v); return; }
+  const b = dataBounds();
+  if(b) map.fitBounds([[b[0],b[1]],[b[2],b[3]]], {padding:30, duration:0});
+}
+
+
+/* ================================================================== *
+ * Beheer — bestanden naar GitHub sturen vanuit de app zelf
+ *
+ * Alles loopt over de GitHub-API met een token dat de beheerder zelf
+ * invult. Er komt geen server van ons aan te pas.
+ *
+ * Over dat token, eerlijk: wat in localStorage staat is leesbaar voor
+ * iedereen die aan dit toestel kan en voor elk script dat op deze pagina
+ * draait. Daarom is "onthouden" uit tenzij je het aanvinkt, staat er een
+ * knop om het te vergeten, en raden we een fine-grained token aan dat
+ * alleen deze ene repository mag, alleen inhoud en pull requests, met een
+ * korte vervaldatum.
+ * ================================================================== */
+const GH = 'https://api.github.com';
+
+const adm = {
+  repo:   recall('adm.repo'),
+  branch: recall('adm.branch') || 'main',
+  path:   recall('adm.path') || 'source/',
+  token:  recall('adm.token'),
+};
+
+/* Het beheerscherm is niet zichtbaar tenzij je het opzoekt: ?admin=1 in de
+   URL, of vijf keer op het logo tikken. Geen beveiliging — een drempel. */
+function unlockAdmin(){
+  document.body.classList.add('admin');
+  $('admRepo').value   = adm.repo;
+  $('admBranch').value = adm.branch;
+  $('admPath').value   = adm.path;
+  $('admToken').value  = adm.token;
+  $('admRemember').checked = !!adm.token;
+  buildEmbed();
+}
+if(new URLSearchParams(location.search).get('admin') === '1' || recall('adm.repo')) unlockAdmin();
+(function(){
+  let taps = 0, timer = null;
+  document.querySelector('.brand').addEventListener('click', () => {
+    clearTimeout(timer); timer = setTimeout(() => taps = 0, 2500);
+    if(++taps >= 5){ taps = 0; unlockAdmin(); showStatus('in', t('adm.unlocked'), ''); }
+  });
+})();
+
+['admRepo','admBranch','admPath'].forEach(id => $(id).addEventListener('input', () => {
+  adm.repo   = $('admRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'');
+  adm.branch = $('admBranch').value.trim() || 'main';
+  adm.path   = $('admPath').value.trim() || 'source/';
+  remember('adm.repo', adm.repo); remember('adm.branch', adm.branch); remember('adm.path', adm.path);
+  buildEmbed();
+}));
+$('admToken').addEventListener('input', () => {
+  adm.token = $('admToken').value.trim();
+  if($('admRemember').checked) remember('adm.token', adm.token);
+});
+$('admRemember').addEventListener('change', e => {
+  if(e.target.checked) remember('adm.token', adm.token);
+  else { try{ localStorage.removeItem('diana.adm.token'); }catch{} }
+});
+
+async function gh(path, opts){
+  const r = await fetch(GH + path, {
+    ...opts,
+    headers: {
+      'Accept':'application/vnd.github+json',
+      'X-GitHub-Api-Version':'2022-11-28',
+      'Authorization':'Bearer ' + adm.token,
+      ...(opts && opts.body ? {'Content-Type':'application/json'} : {}),
+      ...(opts && opts.headers || {}),
+    }
+  });
+  const text = await r.text();
+  let data = null; try{ data = text ? JSON.parse(text) : null; }catch{}
+  if(!r.ok){
+    const msg = (data && data.message) || `HTTP ${r.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+$('admTest').onclick = async () => {
+  const fb = $('admFb');
+  if(!adm.repo || !adm.token){ fb.textContent = t('adm.needboth'); fb.className='fb bad'; return; }
+  fb.textContent = t('adm.testing'); fb.className = 'fb';
+  try{
+    const repo = await gh(`/repos/${adm.repo}`);
+    const ref  = await gh(`/repos/${adm.repo}/git/ref/heads/${adm.branch}`);
+    const can  = repo.permissions && (repo.permissions.push || repo.permissions.admin);
+    fb.innerHTML = `✓ ${repo.full_name} · ${adm.branch} @ ${ref.object.sha.slice(0,7)}` +
+                   (can ? '' : `<br>⚠ ${t('adm.noperm')}`);
+    fb.className = 'fb ' + (can ? 'good' : 'bad');
+    $('admSend').disabled = !($('admFile').files && $('admFile').files.length);
+  }catch(err){
+    fb.textContent = '✗ ' + err.message; fb.className = 'fb bad';
+    $('admSend').disabled = true;
+  }
+};
+
+$('admFile').addEventListener('change', () => {
+  $('admSend').disabled = !($('admFile').files.length && adm.repo && adm.token);
+});
+
+/* Grote bestanden in stukjes naar base64 — in één keer loopt de aanroepstack vol. */
+function toBase64(buf){
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  const CH = 0x8000;
+  for(let i=0;i<bytes.length;i+=CH) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+CH));
+  return btoa(bin);
+}
+
+const STEPS = ['adm.s1','adm.s2','adm.s3','adm.s4','adm.s5','adm.s6','adm.s7'];
+function drawSteps(at, err){
+  $('admSteps').hidden = false;
+  $('admSteps').innerHTML = STEPS.map((k,i) => {
+    const cls = err && i===at ? 'err' : i < at ? 'done' : i === at ? 'now' : '';
+    const mk  = err && i===at ? '✗' : i < at ? '✓' : i === at ? '…' : '·';
+    return `<div class="step ${cls}"><span class="mk">${mk}</span><span>${t(k)}</span></div>`;
+  }).join('') + (err ? `<div class="step err"><span class="mk">!</span><span>${err}</span></div>` : '');
+}
+
+$('admSend').onclick = async () => {
+  const file = $('admFile').files[0];
+  if(!file) return;
+  $('admSend').disabled = true;
+  const path = (adm.path.replace(/^\/|\/$/g,'') + '/' + file.name).replace(/^\//,'');
+  const stamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g,'');
+  const branch = `diana-upload-${stamp}`;
+  let step = 0;
+  try{
+    drawSteps(step);                                            // 1 basis ophalen
+    const ref = await gh(`/repos/${adm.repo}/git/ref/heads/${adm.branch}`);
+    const baseSha = ref.object.sha;
+
+    drawSteps(++step);                                          // 2 bestand inlezen
+    const b64 = toBase64(await file.arrayBuffer());
+
+    drawSteps(++step);                                          // 3 blob
+    const blob = await gh(`/repos/${adm.repo}/git/blobs`, {
+      method:'POST', body: JSON.stringify({content:b64, encoding:'base64'})});
+
+    drawSteps(++step);                                          // 4 boom
+    const baseCommit = await gh(`/repos/${adm.repo}/git/commits/${baseSha}`);
+    const tree = await gh(`/repos/${adm.repo}/git/trees`, {
+      method:'POST', body: JSON.stringify({base_tree: baseCommit.tree.sha,
+        tree:[{path, mode:'100644', type:'blob', sha: blob.sha}]})});
+
+    drawSteps(++step);                                          // 5 commit
+    const commit = await gh(`/repos/${adm.repo}/git/commits`, {
+      method:'POST', body: JSON.stringify({
+        message:`data: ${file.name} toegevoegd via Diana`, tree: tree.sha, parents:[baseSha]})});
+
+    drawSteps(++step);                                          // 6 branch
+    await gh(`/repos/${adm.repo}/git/refs`, {
+      method:'POST', body: JSON.stringify({ref:`refs/heads/${branch}`, sha: commit.sha})});
+
+    drawSteps(++step);                                          // 7 pull request
+    const pr = await gh(`/repos/${adm.repo}/pulls`, {
+      method:'POST', body: JSON.stringify({
+        title:`Nieuwe bronrelease: ${file.name}`, head: branch, base: adm.branch,
+        body:`Geüpload via het beheerscherm van Diana.\n\nBestand: \`${path}\` (${(file.size/1e6).toFixed(1)} MB)\n\nDe workflows zetten de data om en plaatsen hieronder het verschillenrapport en een preview-link. Kijk daarnaar vóór je merget.`})});
+
+    drawSteps(STEPS.length);
+    $('admSteps').innerHTML += `<div class="step done"><span class="mk">→</span>
+      <a href="${pr.html_url}" target="_blank" rel="noopener">${t('adm.openpr')} #${pr.number}</a></div>`;
+    showStatus('in', t('adm.done'), `#${pr.number} · ${file.name}`);
+  }catch(err){
+    drawSteps(step, err.message);
+    showStatus('out', t('adm.failed'), err.message);
+  }finally{
+    $('admSend').disabled = false;
+  }
+};
+
+/* ---------- insluitcode ---------- */
+function buildEmbed(){
+  const base = location.origin + location.pathname.replace(/[^/]*$/,'');
+  const q = ['embed=1'];
+  const prov = $('embProv').value.trim(); if(prov) q.push('prov=' + encodeURIComponent(prov));
+  const lg   = $('embLang').value.trim(); if(lg)   q.push('lang=' + encodeURIComponent(lg));
+  if($('embSpots').checked) q.push('spots=1');
+  $('embCode').textContent =
+`<iframe src="${base}?${q.join('&')}"
+        width="100%" height="600" style="border:0"
+        loading="lazy" allow="geolocation"></iframe>`;
+}
+['embProv','embLang'].forEach(id => $(id).addEventListener('input', buildEmbed));
+$('embSpots').addEventListener('change', buildEmbed);
+$('embCopy').onclick = async () => {
+  try{ await navigator.clipboard.writeText($('embCode').textContent);
+       showStatus('in', t('adm.copied'), ''); }
+  catch{ showStatus('out', t('adm.copyfail'), ''); }
+};
+
+/* ================================================================== *
+ * Scherm 3 — zelf een spot melden via WWFF Spotline
+ *
+ * De regels hieronder zijn overgenomen uit de eigen paginacode van
+ * spots.wwff.co/spots/create, zodat we dezelfde controles doen vóór we
+ * iets versturen in plaats van de server te laten weigeren:
+ *   roepteken   /^[A-Z0-9\/]{3,}$/ én minstens één cijfer
+ *   frequentie  135,7 … 7.500.000.000 kHz
+ *   referentie  minstens 7 tekens, gecontroleerd via hun eigen endpoint
+ *   opmerking   max 100 tekens, en een woordfilter aan hun kant
+ *   activator, spotter en referentie gaan in HOOFDLETTERS
+ *
+ * Versturen gebeurt als een gewone formulierpost in een nieuw tabblad.
+ * Dat mag cross-origin (formulieren vallen niet onder CORS), en de
+ * gebruiker ziet de bevestiging van Spotline zelf — betrouwbaarder dan
+ * een fetch waarvan we het antwoord toch niet mogen lezen.
+ * ================================================================== */
+const SPOT_POST   = 'https://spots.wwff.co/spots/store';
+const REF_CHECK   = 'https://spots.wwff.co/api/references/validate?reference=';
+const CALL_RE     = /^[A-Z0-9/]{3,}$/;
+
+
+function validCall(v){ return CALL_RE.test(v) && /[0-9]/.test(v); }
+function validFreq(v){ const f = parseFloat(v); return !isNaN(f) && f >= 135.7 && f <= 7500000000; }
+
+/* Welke bandsegment hoort bij deze frequentie, en klopt de mode daarmee? */
+function bandCheck(khz, mode){
+  const f = parseFloat(khz); if(isNaN(f)) return null;
+  for(const b of BANDS){
+    if(f < b.lo || f > b.hi) continue;
+    const seg = b.seg.find(([,lo,hi]) => f >= lo && f <= hi);
+    const family = mode === 'SSB' || mode === 'AM' ? 'SSB'
+                 : mode === 'CW' ? 'CW'
+                 : mode === 'FM' ? 'FM'
+                 : mode ? 'Digi' : null;
+    return {band:b.n, seg: seg ? seg[0] : null, ok: !family || !seg || seg[0] === family};
+  }
+  return {band:null, seg:null, ok:true};
+}
+
+function selfPrefill(){
+  const ref = selected;
+  const z = ref && zones && zones.features.find(f => f.properties.ref === ref);
+  if(z){
+    $('spReference').value = z.properties.ref;
+    $('selfCtx1').textContent = `${z.properties.ref} · ${z.properties.name}`;
+    $('selfCtx').hidden = false;
+    checkReference();
+  } else {
+    $('selfCtx').hidden = true;
+  }
+  if(!$('spActivator').value) $('spActivator').value = recall('activator') || cfg.callp || cfg.call;
+  if(!$('spSpotter').value)   $('spSpotter').value   = recall('spotter')   || cfg.call || (cfg.callp||'').split('/')[0];
+  validateSelf();
+}
+
+let refTimer = null;
+function checkReference(){
+  const v = $('spReference').value.trim().toUpperCase();
+  const fb = $('fbReference');
+  clearTimeout(refTimer);
+  if(v.length < 7){ fb.textContent = v ? t('self.reftooshort') : ''; fb.className = 'fb'; return; }
+  fb.textContent = t('self.refchecking'); fb.className = 'fb';
+  refTimer = setTimeout(async () => {
+    try{
+      const d = await (await fetch(REF_CHECK + encodeURIComponent(v))).json();
+      if(d.valid && d.is_active){ fb.textContent = '✓ ' + (d.name || v); fb.className = 'fb good'; }
+      else if(d.valid){ fb.textContent = t('self.refinactive'); fb.className = 'fb bad'; }
+      else { fb.textContent = t('self.refunknown'); fb.className = 'fb bad'; }
+    }catch{
+      // Lukt de controle niet (CORS of geen net), dan blokkeren we niets:
+      // Spotline controleert het zelf nog eens bij het versturen.
+      fb.textContent = t('self.refnocheck'); fb.className = 'fb';
+    }
+  }, 500);
+}
+
+function validateSelf(){
+  let ok = true;
+  const set = (el, good, msg, fbId) => {
+    el.classList.toggle('bad', !good && el.value.trim() !== '');
+    el.classList.toggle('good', good && el.value.trim() !== '');
+    if(fbId){ const f = $(fbId); f.textContent = msg || ''; f.className = 'fb' + (msg && !good ? ' bad' : ''); }
+    if(!good) ok = false;
+  };
+  const a = $('spActivator'), sp = $('spSpotter'), r = $('spReference'), f = $('spFreq'), m = $('spMode');
+  set(a,  validCall(a.value.trim()),  '');
+  set(sp, validCall(sp.value.trim()), '');
+  set(r,  r.value.trim().length >= 7, '');
+
+  let msg = '', good = validFreq(f.value.trim());
+  if(f.value.trim() && !good) msg = t('self.freqrange');
+  else if(good && m.value){
+    const bc = bandCheck(f.value.trim(), m.value);
+    if(bc && bc.band && bc.seg && !bc.ok) msg = `⚠ ${bc.band}: ${bc.seg}-${t('self.segment')}`;
+    else if(bc && bc.band) msg = `${bc.band}${bc.seg ? ' · ' + bc.seg : ''}`;
+  }
+  set(f, good, msg, 'fbFreq');
+  if(!m.value) ok = false;
+  $('spSend').disabled = !ok;
+  return ok;
+}
+
+['spActivator','spSpotter','spReference'].forEach(id => {
+  $(id).addEventListener('input', e => {
+    const p = e.target.selectionStart;
+    e.target.value = e.target.value.toUpperCase();
+    e.target.setSelectionRange(p, p);
+    if(id === 'spReference') checkReference();
+    validateSelf();
+  });
+});
+['spFreq','spMode'].forEach(id => $(id).addEventListener('input', validateSelf));
+$('spRemarks').addEventListener('input', e => {
+  $('spCount').textContent = `${e.target.value.length}/100`;
+});
+document.querySelectorAll('.chip[data-add]').forEach(c => c.onclick = () => {
+  const el = $('spRemarks');
+  const add = c.dataset.add;
+  if(el.value.includes(add)) return;
+  el.value = (el.value ? el.value.replace(/\s*$/, ', ') : '') + add;
+  el.value = el.value.slice(0, 100);
+  $('spCount').textContent = `${el.value.length}/100`;
+});
+
+$('spSend').onclick = () => {
+  if(!validateSelf()) return;
+  remember('activator', $('spActivator').value.trim());
+  remember('spotter',   $('spSpotter').value.trim());
+
+  // Een echte formulierpost naar een ander domein mag; een fetch niet.
+  const form = Object.assign(document.createElement('form'), {
+    method:'post', action:SPOT_POST, target:'_blank'
+  });
+  const fields = {
+    activator:     $('spActivator').value.trim(),
+    frequency_khz: $('spFreq').value.trim(),
+    mode:          $('spMode').value,
+    reference:     $('spReference').value.trim(),
+    spotter:       $('spSpotter').value.trim(),
+    remarks:       $('spRemarks').value.trim(),
+  };
+  for(const [k,v] of Object.entries(fields)){
+    form.appendChild(Object.assign(document.createElement('input'), {type:'hidden', name:k, value:v}));
+  }
+  document.body.appendChild(form);
+  form.submit();
+  form.remove();
+  showStatus('in', t('self.sent'), `${fields.activator} · ${fields.reference} · ${fields.frequency_khz} kHz ${fields.mode}`);
+};
 
 /* ================================================================== *
  * Scherm 4 — activatiesessie en GPS-bewijs
@@ -1503,9 +3677,9 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   navigator.serviceWorker.register('sw.js').catch(()=>{});
   navigator.serviceWorker.addEventListener('message', e=>{
     if(e.data?.type==='PREFETCH_PROGRESS')
-      showStatus('out', 'Gebied downloaden…', `${e.data.done} van ${e.data.total} tegels`);
+      showStatus('out', t('off.downloading'), `${e.data.done} / ${e.data.total} ${t('off.tiles')}`);
     if(e.data?.type==='PREFETCH_DONE')
-      showStatus('in', 'Gebied opgeslagen', `${e.data.done} tegels beschikbaar zonder netwerk.`);
+      showStatus('in', t('off.saved'), `${e.data.done} ${t('off.tilesoffline')}`);
   });
 }
 
@@ -1513,7 +3687,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
    service worker ze binnenhalen. Dit is de knop die je indrukt vóór je vertrekt. */
 function prefetchArea(){
   if(!navigator.serviceWorker?.controller){
-    showStatus('out','Offline opslaan kan hier niet','Dat werkt pas wanneer Diana van een webadres draait.');
+    showStatus('out', t('off.cannot'), t('off.cannotsub'));
     return;
   }
   const b = map.getBounds(), urls = [];
@@ -1526,8 +3700,8 @@ function prefetchArea(){
     for(let x=x1;x<=x2;x++) for(let y=y1;y<=y2;y++)
       urls.push(`https://tiles.openfreemap.org/planet/${z}/${x}/${y}.pbf`);
   }
-  if(!urls.length){ showStatus('out','Zoom eerst wat in','Het huidige venster is te groot om offline te bewaren.'); return; }
-  showStatus('out','Gebied downloaden…',`0 van ${urls.length} tegels`);
+  if(!urls.length){ showStatus('out', t('off.zoomin'), t('off.zoominsub')); return; }
+  showStatus('out', t('off.downloading'), `0 / ${urls.length} ${t('off.tiles')}`);
   navigator.serviceWorker.controller.postMessage({type:'PREFETCH_TILES', urls});
 }
 
@@ -1567,8 +3741,8 @@ function distanceToZone(lat,lon,f){
   return best;
 }
 function locate(){
-  if(!navigator.geolocation){ showStatus('out','Geen GPS beschikbaar','Deze browser deelt geen locatie.'); return; }
-  showStatus('out','Locatie zoeken…','');
+  if(!navigator.geolocation){ showStatus('out', t('gps.none'), t('gps.nonesub')); return; }
+  showStatus('out', t('gps.searching'), '');
   navigator.geolocation.getCurrentPosition(pos=>{
     const {latitude:lat, longitude:lon, accuracy} = pos.coords;
     here = {lat, lon};
@@ -1577,7 +3751,7 @@ function locate(){
     evaluate(lat,lon,accuracy);
     renderSpots();
   }, err=>{
-    showStatus('out','Locatie niet gelukt', err.message);
+    showStatus('out', t('gps.failed'), err.message);
   }, {enableHighAccuracy:true, timeout:12000, maximumAge:5000});
 }
 function evaluate(lat,lon,accuracy){
@@ -1594,11 +3768,11 @@ function evaluate(lat,lon,accuracy){
     const edge = Math.min(...inside.map(f=>distanceToZone(lat,lon,f)));
     const names = inside.map(f=>`${f.properties.ref} ${f.properties.name}`).join(' · ');
     if(edge < acc){
-      showStatus('near', `Vlak bij de grens van ${inside[0].properties.ref}`,
-        `±${Math.round(edge)} m van de rand, GPS-nauwkeurigheid ±${acc} m — controleer visueel.`);
+      showStatus('near', t('gps.nearedge').replace('{ref}', inside[0].properties.ref),
+        t('gps.nearedgesub').replace('{d}', Math.round(edge)).replace('{a}', acc));
     } else {
-      showStatus('in', inside.length>1 ? `Je staat in ${inside.length} gebieden` : 'Je staat in het gebied',
-        `${names} — ${Math.round(edge)} m tot de dichtstbijzijnde grens.`);
+      showStatus('in', inside.length>1 ? t('gps.inmany').replace('{n}', inside.length) : t('gps.inone'),
+        `${names} — ${t('gps.toedge').replace('{d}', Math.round(edge))}`);
     }
     select(inside[0].properties.ref, inside.map(f=>f.properties.ref));
   } else {
@@ -1609,8 +3783,8 @@ function evaluate(lat,lon,accuracy){
     }
     const f = zones.features.find(x=>x.properties.ref===best.ref);
     const edge = distanceToZone(lat,lon,f);
-    showStatus('out','Je staat buiten een ONFF-gebied',
-      `Dichtstbij: ${best.ref} ${best.name} — ${edge>1500?(edge/1000).toFixed(1)+' km':Math.round(edge)+' m'}.`);
+    showStatus('out', t('gps.outside'),
+      `${t('gps.nearest')}: ${best.ref} ${best.name} — ${edge>1500?(edge/1000).toFixed(1)+' km':Math.round(edge)+' m'}.`);
   }
 }
 function showStatus(kind,t1,t2){
