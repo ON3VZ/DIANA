@@ -788,7 +788,7 @@ const $ = id => document.getElementById(id);
 
 /* Versie van de app zelf. Staat op het startscherm en in Instellingen, zodat een
    melding als "het doet raar" te koppelen is aan een versie. */
-const APP_VERSION = '1.4.1';
+const APP_VERSION = '1.4.2';
 
 /* ---------- startscherm ----------
  * Het duurt even voor 3,7 MB zonedata binnen is en de kaart getekend staat. In
@@ -2922,20 +2922,31 @@ function paintWorld(tries){
   if(src){ src.setData(data); applyVisibility(); return; }
   if(!worldPoints.features.length) return;
   map.addSource('wwff-world', { type:'geojson', data, cluster:true, clusterRadius:50, clusterMaxZoom:9 });
-  // Bewust grijs en terughoudend, niet groen. Deze laag ligt over de hele kaart
-  // en mag nooit de aandacht wegtrekken van de spots — dat is precies wat er
-  // gebeurde toen deze punten dezelfde groentint hadden als een actieve spot.
+  // Eigen kleur, en bewust géén groen of oranje: die zijn al bezet door de
+  // gebieden, de spots en de agenda. Blauw leest meteen als "ander land".
   map.addLayer({ id:'world-clusters', type:'circle', source:'wwff-world', filter:['has','point_count'],
-    paint:{ 'circle-color':'#8a8f8c', 'circle-opacity':0.55,
-            'circle-radius':['step',['get','point_count'],12, 50,16, 500,21, 5000,26],
-            'circle-stroke-width':1.5, 'circle-stroke-color':'#f6f4ee' } });
+    paint:{ 'circle-color':'#2563eb', 'circle-opacity':0.7,
+            'circle-radius':['step',['get','point_count'],13, 50,17, 500,22, 5000,27],
+            'circle-stroke-width':1.5, 'circle-stroke-color':'#fff' } });
   if(map.getStyle().glyphs) map.addLayer({
     id:'world-cluster-count', type:'symbol', source:'wwff-world', filter:['has','point_count'],
     layout:{'text-field':['get','point_count_abbreviated'],'text-font':['Noto Sans Regular'],'text-size':11},
     paint:{'text-color':'#fff'} });
+  // Meegroeien met de zoom: uitgezoomd zijn het er duizenden en moet het klein
+  // blijven, ingezoomd zijn het er een handvol en mag je ze niet moeten zoeken.
   map.addLayer({ id:'world-point', type:'circle', source:'wwff-world', filter:['!',['has','point_count']],
-    paint:{ 'circle-radius':3, 'circle-color':'#8a8f8c', 'circle-opacity':0.7,
-            'circle-stroke-width':1, 'circle-stroke-color':'#f6f4ee' } });
+    paint:{ 'circle-radius':['interpolate',['linear'],['zoom'], 4,3.5, 8,5, 12,7.5, 16,10],
+            'circle-color':'#2563eb', 'circle-opacity':0.95,
+            'circle-stroke-width':['interpolate',['linear'],['zoom'], 4,1, 12,2],
+            'circle-stroke-color':'#fff' } });
+  // Pas vanaf zoom 11: daaronder is het een wolk tekst, daarboven is het precies
+  // wat je wil weten zonder te moeten tikken.
+  if(map.getStyle().glyphs) map.addLayer({
+    id:'world-label', type:'symbol', source:'wwff-world', filter:['!',['has','point_count']],
+    minzoom:11,
+    layout:{'text-field':['get','ref'],'text-font':['Noto Sans Regular'],'text-size':11,
+            'text-offset':[0,1.1],'text-anchor':'top','text-allow-overlap':false,'text-padding':6},
+    paint:{'text-color':'#1e3a8a','text-halo-color':'#fff','text-halo-width':2} });
   if(!worldBound){
     worldBound = true;
     map.on('click','world-clusters', e => {
@@ -3134,7 +3145,7 @@ function applyVisibility(){
    'spot-arcs-line','agenda-arcs-line']
     .forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',sv); });
   const wv = showWorld ? 'visible' : 'none';
-  ['world-clusters','world-cluster-count','world-point']
+  ['world-clusters','world-cluster-count','world-point','world-label']
     .forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',wv); });
 }
 
@@ -3928,6 +3939,24 @@ const cfg = {
   // nooit op een lege wereldbol.
   view:  recall('view') || 'gps',
 };
+
+/* Eenmalige overstap naar de nieuwe standaard.
+ *
+ * Zonder dit zou vrijwel niemand hem ooit zien: saveSettings() schrijft álle
+ * instellingen weg, dus wie ooit een taal of roepnaam heeft ingevuld heeft de
+ * óude standaard 'grid' al in localStorage staan, en `recall('view') || 'gps'`
+ * geeft dan gewoon 'grid' terug.
+ *
+ * Alleen 'grid' schuift mee, want dát was de oude standaardwaarde — wie
+ * bewust 'call' of 'all' koos, houdt zijn keuze. En het gebeurt precies één
+ * keer: zet je hem daarna terug op je locator, dan blijft dat zo. */
+if(!recall('view.gpsdefault')){
+  remember('view.gpsdefault', '1');
+  if(!recall('view') || recall('view') === 'grid'){
+    cfg.view = 'gps';
+    remember('view', 'gps');
+  }
+}
 
 function saveSettings(){
   remember('call',  cfg.call);
