@@ -42,8 +42,15 @@ it does not introduce a new data source.
 | File | Size (approx.) | Read by | Contents |
 |---|---|---|---|
 | `data/onff.geojson` | 3.7 MB (≈1 MB gzipped) | the map, on load | one `MultiPolygon` per ONFF reference, with name, province, area, and whatever attributes the source KMZ provided |
-| `data/onff-index.json` | 210 kB | search, lists, "nearest zone", province filters, embed `?prov=` | the same list **without geometry**: reference, name, province, area, centroid, bounding box |
-| `data/meta.json` | small | not shown to the user; provenance only | which source KMZ, which release date, which build settings produced this data |
+| `data/onff-points.geojson` | small | the map, on load (optional — a missing file is not an error) | one `Point` per reference that exists on the ONFF list but has **no boundary** in the KMZ |
+| `data/onff-activity.json` | 39 kB | the Heatmap, as a fallback | QSO count and last-activation date per reference, taken from the WWFF directory |
+| `data/onff-index.json` | 210 kB | **not loaded by the app** — it exists for tooling, reports and anything built alongside Diana | the zone list **without geometry**: reference, name, province, area, centroid, bounding box, plus a `points` array covering the boundary-less references (including those with no known coordinate, which therefore appear in no other file) |
+| `data/meta.json` | small | not shown to the user; provenance only | which source KMZ, which release date, which build settings, and how many boundary-less references were placed or left unplaced |
+
+The app builds its own in-memory search index from `onff.geojson` +
+`onff-points.geojson` at load time, so `onff-index.json` is a build artefact
+rather than a runtime dependency — useful to know before optimising the wrong
+file.
 
 The app tries `./data/...` first (published layout, data next to
 `index.html`) and falls back to `../data/...` (repository layout, one level
@@ -75,10 +82,72 @@ knowing when reasoning about gaps in the data:
   number**. The app treats every attribute as optional and omits empty
   fields rather than showing a placeholder.
 - The ONFF index sheet (see §2.2) lists 965 references; the KMZ covers 932
-  of them (97%) — about 33 references currently have no polygon at all.
+  of them (97%) — exactly 33 reference numbers in the 0001–0965 range have no
+  polygon at all. Those become Points rather than disappearing; §2.1.1 covers
+  how they are placed.
 - The KMZ also contains a Maidenhead grid overlay of roughly 32,700
   placemarks, which the build script discards: a grid is cheaper to compute
   client-side than to ship as data.
+
+### 2.1.1 The WWFF directory — which references exist
+
+`https://wwff.co/wwff-data/wwff_directory.csv` is regenerated daily and lists
+**every WWFF reference worldwide** — about 68,000 rows across 190 national
+programmes, 964 of them ONFF. Columns: `reference, status, name, program, dxcc,
+state, county, continent, iota, iaruLocator, latitude, longitude, IUCNcat,
+validFrom, validTo, notes, lastMod, changeLog, reviewFlag, specialFlags,
+website, country, region, dxccEnum, qsoCount, lastAct`. The build reads them by
+name, never by position.
+
+This is the source of record for **which references exist**; the KMZ only says
+which of them have a *boundary*. The two are joined on the reference number:
+
+| Situation | What Diana does |
+|---|---|
+| in the directory **and** in the KMZ (932) | draws the polygon; the directory row is used only to cross-check and for activity figures |
+| in the directory, **not** in the KMZ (16) | draws a Point at the directory's coordinates |
+| `status` is not `active` (16) | not shown at all — the directory keeps retired references, renamed "DELETED AREA — …" |
+| in the KMZ, **not** in the directory | flagged as a warning in the build report — currently none |
+
+That table is the whole de-duplication rule: **a polygon always wins, so a
+reference is drawn once and only once.** 932 + 16 = 948 = exactly the number of
+active ONFF references the directory lists.
+
+Two data traps the build guards against, both real: the directory marks "position
+unknown" as latitude/longitude `0,0` *and* locator `JJ00AA` (which converts to
+0.02, 0.04 — close to but not exactly zero), and one row carries an impossible
+`lastAct` year of 1059. Both are filtered rather than plotted or coloured.
+
+Coordinates come from `latitude`/`longitude`, falling back to the centre of the
+`iaruLocator` square, falling back to `overrides.json`. `overrides.json` always
+wins where set.
+
+### 2.1.2 References with no boundary
+
+A reference on ONFF's list but absent from the KMZ used to be invisible in
+Diana. It is now drawn as a **dashed ring with an amber centre** — deliberately
+unlike a zone outline, because a point is not a boundary. Consequences that are
+enforced in code, not just documented:
+
+- the GPS "am I inside this zone" test skips them entirely — there is no inside
+  to be in, and claiming otherwise would be worse than saying nothing
+- the detail panel shows no area and no parcel count, and states plainly why
+- they are searchable and marked `◌` in results, and can be toggled off as
+  their own map layer
+- an announced agenda item on such a reference can still be plotted, because
+  the point gives it a position
+
+Coordinates come from three places, in this order:
+
+| Source | Notes |
+|---|---|
+| `overrides.json` → `"point": [lon, lat]` | manual, always wins, survives every new release |
+| the directory's `latitude`/`longitude` | filled for every active ONFF row today |
+| the centre of its `iaruLocator` square | the backstop; roughly 5 km accuracy, which is fine for "this reference is over there" |
+
+Unplaced references are not silently dropped: they are counted in `meta.json`,
+listed in the build's PR comment with an instruction to add a coordinate, and
+recorded in `onff-index.json`. As of the current data there are none.
 
 ### 2.2 The ONFF activation-history sheet (heatmap)
 
@@ -96,6 +165,13 @@ https://docs.google.com/spreadsheets/d/<id>/gviz/tq?tqx=out:csv&sheet=<tab>
 `&tq=select D, max(A), sum(C) group by D`), which lets the app ask the
 sheet to pre-aggregate rather than downloading everything and reducing it
 client-side.
+
+If the sheet cannot be reached — it is a published spreadsheet, not an API, and
+whether CORS allows a browser to read it is still unconfirmed — the Heatmap
+falls back to `data/onff-activity.json`, built from the WWFF directory at data
+build time. That fallback is coarser (a total QSO count and one last-activation
+date per reference, with no per-year breakdown) but it needs no third party at
+all and works offline. The panel says which of the two it is showing.
 
 Relevant tabs: one per year (2013–2026: activation date, activating
 callsign, QSO count, ONFF reference, region, low-power/GoGreen flags),
@@ -183,8 +259,9 @@ never called during normal browsing. Full flow in [ADMIN.md](ADMIN.md).
 
 | Storage | Contents | Synced across devices? |
 |---|---|---|
-| `localStorage` key `diana.lang` | chosen UI language | No |
-| `localStorage` key `diana.cfg` (or similar settings keys) | callsign, portable callsign, grid locator, home-view preference | No |
+| `localStorage` key `diana.lang` | language preference: a language code, or `auto` to follow the browser. Absent means English | No |
+| `localStorage` keys `diana.call` / `diana.callp` / `diana.grid` / `diana.view` | callsign, portable callsign, grid locator, home-view preference | No |
+| `localStorage` keys `diana.installed` / `diana.inst.asked` | whether the app was installed, and whether the install banner has already been dismissed once | No |
 | `localStorage` (admin keys) | remembered repository/branch/path, and the GitHub token **only if the "remember" checkbox was ticked** | No |
 | Session GPX track (in memory / downloaded file) | an activation session's GPS trace | Not stored at all beyond the download — never uploaded anywhere |
 | Cache Storage (service worker) | app shell, the three `data/*.json` files, map tiles (LRU-capped) | No — per browser profile |

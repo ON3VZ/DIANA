@@ -140,7 +140,83 @@ for the full parameter reference and a live example.
 
 ---
 
-## 3. Troubleshooting
+## 3. Where the data comes from — and what you actually have to do
+
+Diana joins two sources, and they need different amounts of work from you:
+
+| Source | How it arrives | What you do |
+|---|---|---|
+| **WWFF directory** (`wwff.co/wwff-data/wwff_directory.csv`) — which references exist, their official names, coordinates, QSO counts | **fetched automatically on every data build**, including a build every night at 01:00 UTC. It is regenerated daily at WWFF's end | nothing, normally — see below |
+| **ONFF KMZ** — the actual boundaries | **you upload it**, by hand, when ONFF publishes a new release | upload → check the preview → merge (§1) |
+
+So a new *reference* (a park added to WWFF), a renamed one, a retired one, or
+updated QSO counts appear by themselves — a scheduled build runs every night
+at 01:00 UTC against whatever KMZ is already in the repository. Most nights
+this changes nothing (Belgian references don't move every day) and the run
+ends quietly with nothing committed.
+
+When the directory *did* change and the build produced good output, that
+nightly run **commits straight to `main` by itself** — no pull request, no
+waiting for you to click merge. This is a deliberate exception to the
+"a human always looks first" rule that governs KMZ uploads: it only ever
+touches which references exist, their name, position, or QSO stats — never a
+boundary, which still only ever comes from a KMZ you upload by hand — and
+only commits when the build hit no errors and every output file actually has
+content. If the WWFF directory is unreachable, or the build produces an empty
+or missing output file, the run stops **without committing anything**, and
+instead opens (or comments on an already-open) GitHub issue labelled
+`diana-nachtelijke-build`, so a broken night is a notification you see, not a
+silent gap. GitHub notifies whoever watches the repository the same way it
+does for any other new issue — as a repository owner you watch your own
+repositories by default, so this reaches you as a website notification and,
+if you've turned on email for Issues under github.com → Settings →
+Notifications, as an email too. A new *boundary*, on the other hand, only
+ever appears when you upload a new KMZ — the nightly run never touches
+boundaries, and never opens a PR of its own when it succeeds.
+
+If you want the directory refreshed sooner than the next scheduled run, use
+**Actions → ONFF-data bouwen → Run workflow** — same result, no upload
+needed, and no need to wait for 01:00 UTC.
+
+You can also point the build at a **CSV of your own** instead of the live URL —
+set a repository variable `ONFF_REFS_CSV` (Settings → Secrets and variables →
+Actions → Variables) to a URL or to a path inside the repository. Use that if
+WWFF ever moves the file, or to test a change before it is live. Nothing about
+the upload flow changes; it is the same build either way.
+
+## 3.1 A reference with no boundary
+
+16 of ONFF's 948 active references have no polygon in the KMZ. Diana draws them
+as a dashed ring at an approximate position instead of hiding them — but it can
+only do that if it knows where they are.
+
+Each data build reports the state in the pull-request comment:
+
+> **948 active references** in the directory · **932 with a boundary** from the
+> KMZ · **16 as a point** on the map · 16 retired (not shown)
+
+A reference the directory has no position for at all would be searchable but
+appear nowhere on the map. To place one, add a coordinate to `overrides.json`:
+
+```json
+"ONFF-0123": {
+  "point": [4.4700, 50.8500],
+  "_why": "no boundary in the KMZ; point set on the reserve entrance"
+}
+```
+
+The order is `[longitude, latitude]` — GeoJSON order, so the smaller number
+usually comes first in Belgium. A point set here always wins over the ONFF index
+sheet's own coordinate column, and survives every future release, because the
+key is the reference number. Committing that change alone re-runs the build.
+
+Diana never invents a position: a reference with no coordinate from either
+source stays off the map deliberately, because a wrong pin in a nature reserve
+is worse than no pin.
+
+---
+
+## 4. Troubleshooting
 
 ### No `gh-pages` branch appears
 
@@ -183,7 +259,7 @@ only touches, say, `docs/` won't trigger a data rebuild, by design.
 
 ---
 
-## 4. Before making the repository (or the source KMZ) public
+## 5. Before making the repository (or the source KMZ) public
 
 Publishing Diana as a web app necessarily publishes the zone boundaries —
 any visitor's browser downloads `onff.geojson`, and that's true regardless

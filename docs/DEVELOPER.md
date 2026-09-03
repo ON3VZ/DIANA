@@ -20,6 +20,8 @@ diana/
 │  └─ site.sh         assembles the publishable folder (excludes source/)
 ├─ data/              the output — what the app actually loads
 │  ├─ onff.geojson
+│  ├─ onff-points.geojson   references with no boundary, as Points
+│  ├─ onff-activity.json    QSO count + last activation per reference
 │  ├─ onff-index.json
 │  └─ meta.json
 ├─ overrides.json     manual name corrections, keyed by reference number
@@ -69,7 +71,16 @@ To also regenerate the data locally, see §4.
 | Trigger | What happens |
 |---|---|
 | Pull request touching `source/**.kmz`, `overrides.json`, or `build/**` | Runs `kmz2geojson.py`, commits the regenerated `data/*.json` to the PR branch, and posts (or updates) one PR comment with a diff report |
+| `schedule` — every night at **01:00 UTC** | Runs the same conversion against the newest KMZ already in `source/`, so the only thing that can actually change is whatever the WWFF directory itself changed since yesterday (new/renamed/retired references, updated QSO counts) — never a boundary, since those only come from a KMZ. A dedicated **"Uitvoer controleren"** step first checks that `onff.geojson`, `onff-index.json`, and `meta.json` all exist and are non-empty; only past that check, and only if `data/` actually changed, does it commit — **directly to `main`**, no pull request. If the check fails (directory unreachable and no usable fallback, or any other build error), nothing is committed, and a **"Melding maken bij een mislukte nachtelijke build"** step opens a GitHub issue (or comments on the existing one) labelled `diana-nachtelijke-build` instead |
 | `workflow_dispatch` | Same conversion, run on demand from the Actions tab |
+
+The nightly run is what makes brand-new WWFF references (and status/QSO
+changes) show up without anyone touching the repository, and — unlike a KMZ
+upload — it is allowed to publish by itself, since the worst it can do is
+place or rename a reference, never draw a wrong boundary. A failed night
+raises a GitHub issue rather than failing silently; see
+[ADMIN.md §3](ADMIN.md#3-where-the-data-comes-from--and-what-you-actually-have-to-do)
+for what that looks like and how GitHub's own notifications get it to you.
 
 The diff report looks like:
 
@@ -146,6 +157,19 @@ Takes roughly half a minute for the full Belgian dataset.
 | `--out` | `data` | output folder |
 | `--overrides` | `overrides.json` | manual name-correction file |
 | `--report` | `report.md` | where the diff report is written |
+| `--refs-csv` | `https://wwff.co/wwff-data/wwff_directory.csv` | the WWFF directory (URL **or** local path) — the list of which references exist |
+| `--program` | `ONFF` | comma-separated reference prefixes to keep from the directory, e.g. `ONFF,PAFF,DLFF` for a wider map |
+| `--no-refs` | off | skip the directory entirely — for builds with no network |
+
+The directory is fetched fresh on every build — it is regenerated daily, so
+pinning a copy would go stale. Reading is deliberately tolerant: columns are
+matched by name (never by position, so a new column in the middle is harmless),
+a header row below a title row is found, and a position falls back from
+`latitude`/`longitude` to the `iaruLocator` square. If the directory cannot be
+read at all, the build **continues** with a warning rather than failing — a
+moved file must never block a data release; you just get manual points from
+`overrides.json` only that run. In CI the URL can be overridden without touching
+code, via a repository variable `ONFF_REFS_CSV`.
 
 ### What the script actually does
 
@@ -167,8 +191,18 @@ Takes roughly half a minute for the full Belgian dataset.
    same list without geometry — for search and lists without loading the
    large file), and `data/meta.json` (provenance: source file, release date,
    settings used).
-7. Diffs the new output against the previous release and writes
-   `report.md` — new zones, removed zones, boundary changes.
+7. Fetches the WWFF directory (`--refs-csv`), keeps the rows for `--program`,
+   drops everything whose `status` is not `active`, and joins it to the polygons
+   on the reference number. References with no polygon are written to
+   `data/onff-points.geojson` as Points — positioned from `overrides.json`
+   (`"point": [lon, lat]`, always wins), then the directory's coordinates, then
+   its IARU locator. References with none of those are reported, not invented.
+   The QSO count and last-activation date of every reference go to
+   `data/onff-activity.json`, which the app's heatmap uses when the ONFF sheet
+   is unreachable.
+8. Diffs the new output against the previous release and writes
+   `report.md` — new zones, removed zones, boundary changes, and how many
+   boundary-less references were placed or left unplaced.
 
 ### Correcting a name
 

@@ -29,22 +29,42 @@ without it: everything else keeps working.
 
 ## 2. Installing Diana as an app
 
-Installing just wraps the same web app in its own window and icon — there is
-no separate "app version" with different features.
+Installing wraps the same web app in its own icon and window — there is no
+separate "app version" with different features.
 
-**Android (Chrome):** open Diana, tap the ⋮ menu → **Add to Home screen** (or
-look for the "Install app" banner Chrome shows automatically).
+**The short way: Settings → Install as an app.** Diana does it itself where the
+browser allows it. On Android and on desktop Chrome/Edge you get an **Install
+on this device** button that triggers the browser's own install prompt; a
+one-time banner offers the same thing from the map screen (dismiss it once and
+it stays dismissed — the Settings entry is always there).
 
-**iPhone/iPad (Safari):** open Diana, tap the Share icon (square with an
-arrow), scroll down and tap **Add to Home Screen**.
+Where a browser offers no install API, Diana shows the exact steps for *that*
+browser instead of a button that would do nothing:
 
-**Desktop (Chrome/Edge):** open Diana, click the install icon in the address
-bar (a small monitor-with-arrow icon), or ⋮ menu → **Install Diana…**.
+| Your browser | What Diana shows |
+|---|---|
+| Chrome / Edge (Android, Windows, macOS, Linux) | a working **Install** button |
+| Safari on iPhone/iPad | Share **⬆︎** → **Add to Home Screen** |
+| Chrome/Firefox/Edge on iPhone/iPad | a note that iOS only allows installing from Safari |
+| Safari on macOS | **File ▸ Add to Dock** (Sonoma or newer) |
+| Firefox on desktop | a note that Firefox cannot install web apps — bookmark it, or use Chrome/Edge |
 
-Once installed, Diana opens in its own window without browser chrome, and
+Once installed, that card reads "✓ Diana is installed on this device", and
+Diana opens in its own window without browser chrome, and
 the service worker (see [ARCHITECTURE.md §4](ARCHITECTURE.md#4-offline-behaviour-service-worker))
 keeps the map and zone data available even with no signal — handy on
 activation, where connectivity is exactly what you won't have.
+
+---
+
+## 2.1 Starting up
+
+Diana opens on a start screen — the activation drawing, a radio signal running
+across it, a progress line and the version number — while it reads the zone data
+and prepares the map. It leaves by itself the moment the map is actually drawn,
+and after nine seconds regardless, because being stuck on a start screen is worse
+than a bare map. Embedded in someone else's page (`?embed=1`) it does not appear
+at all.
 
 ---
 
@@ -62,6 +82,16 @@ enough that the answer could flip. Zone reference numbers are shown as
 labels by default. When a spot or zone panel is open, on a phone-sized
 screen only one bottom panel is ever visible at a time — opening one tucks
 the other out of the way automatically.
+
+Some references appear as a **dashed ring with an amber dot** instead of an
+outlined area. Those are real ONFF references that have no boundary in the
+data — the marker is an approximate location only, which is why Diana will not
+tell you whether you are "inside" one, and shows no surface area for it. They
+are searchable (marked `◌` in the result list) and can be switched off under
+the layers button like any other layer.
+
+Panels at the bottom of the screen — a zone's details, a spot's details, the
+heatmap panel — close by **swiping them down**, as well as with the × button.
 
 Turning on the **Spots** map layer (toggle on the map screen, or `?spots=1`
 in the URL) adds a green pulsing icon for each currently active spot and a
@@ -92,8 +122,11 @@ Your callsign, portable callsign (e.g. `ON3VZ/P`), Maidenhead grid locator
 that controls where the map opens: **at your locator**, **at your country**
 (derived from your callsign's prefix), or **the whole dataset**. If neither
 locator nor a recognised prefix is set, the map falls back to fitting all
-currently loaded zones — never a meaningless blank world view. Everything
-here is local to this device; see §Limitations.
+currently loaded zones — never a meaningless blank world view.
+
+This is also where you set your **language** (the seven below, or "follow the
+browser") and where you **install Diana as an app**. Everything here is local
+to this device; see §Limitations.
 
 ### Admin (⛭, hidden by default)
 For repository maintainers only — publishing new data and generating embed
@@ -124,11 +157,14 @@ calling frequencies per band highlighted.
 ## 4. Languages
 
 Diana is available in English, Dutch, French, German, Danish, Italian and
-Spanish. Language is chosen, in order: the `?lang=` URL parameter, your
-previously saved choice, your browser's language (if it's one of the seven),
-otherwise **English by default**. Switching language re-renders every
-screen immediately — nothing requires a page reload, and nothing is left in
-the old language. Zone names themselves are never translated: they're
+Spanish. Set yours in **Settings → Language**; the flags row at the top of the
+map does the same thing. Language is chosen, in order: the `?lang=` URL
+parameter, then your saved setting, otherwise **English**. Your browser's
+language is used only if you explicitly pick **Follow the browser** — so with
+no choice made, Diana is predictably English rather than whatever a borrowed
+device happens to be set to. Switching language re-renders every screen
+immediately — nothing requires a page reload, and nothing is left in the old
+language. Zone names themselves are never translated: they're
 official names and belong in activation logs exactly as ONFF publishes them.
 
 ---
@@ -185,6 +221,13 @@ can do to bring either one back online.
 **Not every zone has full details.** Roughly half of the 932 mapped ONFF
 zones have no attributes beyond a name and reference number — this is a gap
 in the underlying source data, not something the app is hiding.
+
+**And not every reference has a boundary at all.** 16 of ONFF's 948 active
+references have no polygon in the KMZ; Diana shows those as a dashed ring at
+the position the WWFF directory gives. Retired references are not shown at all.
+Which references exist comes from the WWFF directory and refreshes by itself;
+the boundaries come from a file an administrator uploads, so a brand-new park
+can appear as a ring first and gain its outline later.
 
 **Data usage terms.** The zone boundaries and activation figures shown in
 Diana come from ONFF, WDPA, Flemish/Walloon government sources, and WWFF

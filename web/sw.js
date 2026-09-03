@@ -7,7 +7,7 @@
  * Kaarttegels krijgen een eigen cache met een ruwe LRU-limiet, zodat een
  * gedownload gebied blijft staan maar de opslag niet ongelimiteerd groeit.
  */
-const VERSION   = 'diana-v1';
+const VERSION   = 'diana-v3';
 const SHELL     = `${VERSION}-shell`;
 const TILES     = `${VERSION}-tiles`;
 const TILE_MAX  = 3000;               // ruwweg 60 MB aan vectortegels
@@ -17,9 +17,12 @@ const TILE_MAX  = 3000;               // ruwweg 60 MB aan vectortegels
 // addAll() faalt in zijn geheel bij één 404, dus we cachen stuk voor stuk.
 const SHELL_FILES = [
   './', './index.html', './manifest.webmanifest',
+  './icon-192.png', './icon-512.png', './apple-touch-icon.png', './start.jpg', './logo.png',
   './vendor/maplibre-gl.js', './vendor/maplibre-gl.css',
   './data/onff.geojson', './data/onff-index.json', './data/meta.json',
+  './data/onff-points.geojson', './data/onff-activity.json',
   '../data/onff.geojson', '../data/onff-index.json', '../data/meta.json',
+  '../data/onff-points.geojson', '../data/onff-activity.json',
 ];
 
 self.addEventListener('install', e => {

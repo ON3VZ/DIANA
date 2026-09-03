@@ -3,7 +3,12 @@
     "Handmatige correcties op de KMZ-data. Deze blijven staan bij elke nieuwe release.",
     "Sleutel is altijd het ONFF-nummer, nooit de naam — namen bevatten typfouten en dubbels.",
     "Elk veld is optioneel en overschrijft wat uit het KMZ komt.",
-    "Velden: name, province, desig, iucn, manager, registration, region."
+    "Velden: name, province, desig, iucn, manager, registration, region.",
+    "",
+    "Voor referenties zonder polygoon in het KMZ kan je hier een punt zetten:",
+    "  \"ONFF-0123\": { \"point\": [4.47, 50.85], \"_why\": \"geen grens in het KMZ\" }",
+    "Volgorde is [lengte, breedte] — GeoJSON-volgorde, dus lon eerst. Zo'n punt",
+    "wint altijd van de coordinaat uit de ONFF-indexsheet."
   ],
   "zones": {
     "ONFF-0002": {

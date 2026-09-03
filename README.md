@@ -164,8 +164,10 @@ Duurt ongeveer een halve minuut. Opties:
 | Bestand | Grootte | Wat |
 |---|---|---|
 | `data/onff.geojson` | 3,7 MB (1,0 MB gzip) | één MultiPolygon per referentie, met naam, provincie, oppervlakte en wat er aan attributen bekend is |
-| `data/onff-index.json` | 210 kB | dezelfde lijst zónder geometrie: referentie, naam, provincie, oppervlakte, middelpunt, bounding box. Voor zoeken, lijsten en "dichtstbijzijnde gebieden" zonder het grote bestand te laden |
-| `data/meta.json` | klein | herkomst: welk bronbestand, welke release, welke instellingen |
+| `data/onff-points.geojson` | klein | referenties die wél in de WWFF-directory staan maar géén grens hebben in het KMZ, als punt. De app toont ze als gestippelde ring en doet er bewust géén "sta ik erin"-test op |
+| `data/onff-activity.json` | 39 kB | per referentie het aantal QSO's en de datum van de laatste activatie, uit de WWFF-directory. De heatmap gebruikt dit als de ONFF-sheet niet bereikbaar is |
+| `data/onff-index.json` | 210 kB | dezelfde lijst zónder geometrie, plus de punten. Wordt níét door de app geladen — die bouwt zijn eigen index uit de twee geojson-bestanden. Bedoeld voor rapporten en gereedschap ernaast |
+| `data/meta.json` | klein | herkomst: welk bronbestand, welke release, welke instellingen, en hoeveel referenties zonder grens er geplaatst zijn |
 
 Dat hele België in één megabyte past, is de reden dat Diana geen tile-server nodig heeft
 en volledig offline kan werken.
@@ -191,5 +193,11 @@ provincie.
 - Onderliggend is het een WDPA-export met de ONFF-laag erbovenop; vandaar de velden met
   hoofdletters (`MANG_AUTH`, `GIS_AREA`, `IUCN_CAT`) naast de Vlaamse in kleine letters
   (`opp_ha`, `inspireid`).
-- De indexsheet van ONFF telt 965 referenties. Er zijn er dus ongeveer 33 zonder
-  polygoon in het KMZ.
+- **Welke referenties bestaan, komt uit de WWFF-directory**
+  (`https://wwff.co/wwff-data/wwff_directory.csv`, dagelijks vernieuwd, 68.000
+  referenties wereldwijd waarvan 964 ONFF). Het KMZ zegt alleen welke er een
+  *grens* hebben. Van de 948 actieve ONFF-referenties hebben er 932 een polygoon;
+  de overige 16 komen als **punt** op de kaart, met de coördinaat uit de directory
+  of uit `overrides.json` (`"point": [lon, lat]`). Geschrapte referenties worden
+  niet getoond. Elke referentie komt precies één keer voor: een polygoon wint
+  altijd van een punt. Zie [docs/ADMIN.md](docs/ADMIN.md#3-a-reference-with-no-boundary).
