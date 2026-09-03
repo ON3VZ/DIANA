@@ -6,6 +6,12 @@
 <title>Diana — ONFF Zones</title>
 <meta name="theme-color" content="#1b4332">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<!-- iOS leest de manifest-iconen niet voor "Zet op beginscherm". -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Diana">
 <link rel="stylesheet" href="vendor/maplibre-gl.css">
 <style>
   :root{
@@ -37,8 +43,8 @@
     padding:8px 14px 8px 9px; font-weight:650; letter-spacing:-.01em;
   }
   .brand .mark{
-    width:28px;height:28px;border-radius:9px;background:var(--green);
-    display:grid;place-items:center;color:#fff;font-size:15px;
+    width:30px;height:auto;border-radius:0;background:none;
+    display:block;object-fit:contain;
   }
   .spacer{flex:1}
   .iconbtn{
@@ -188,7 +194,13 @@
     display:flex;flex-direction:column;align-items:center;gap:3px;
     font:inherit;font-size:11px;color:var(--ink-3);
   }
-  .nav button .ic{font-size:17px;line-height:1}
+  /* Vaste hoogte voor het icoonvakje: het spots-icoon ((·)) is kleiner gezet dan de
+     rest, en met alleen line-height:1 werd dat vakje mee kleiner — waardoor dat ene
+     label een paar pixels hoger stond dan de andere. Nu staan alle labels gelijk. */
+  .nav button .ic{
+    font-size:17px; line-height:1; height:18px;
+    display:flex; align-items:center; justify-content:center;
+  }
   .nav button[data-view="viewSpots"] .ic{font-size:12px;font-weight:700}
   .nav button.on{color:var(--green);font-weight:650}
   body.has-nav .sheet{bottom:62px}
@@ -308,6 +320,12 @@
     padding:12px 14px; display:none; gap:12px; align-items:center;
   }
   .status.show{display:flex}
+  .status .txt{flex:1;min-width:0}
+  .status .stx{
+    flex:0 0 auto; border:0; background:transparent; cursor:pointer;
+    font-size:22px; line-height:1; color:var(--ink-3); padding:2px 2px 6px; margin:-4px -4px 0 0;
+  }
+  .status .stx:hover{color:var(--ink)}
   .status .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
   .status.in  .dot{background:var(--leaf)}
   .status.near .dot{background:var(--amber)}
@@ -325,6 +343,83 @@
   }
   body.sheet-open .maplibregl-ctrl-bottom-right,
   body.sheet-open .status{ transform:translateY(calc(-1 * var(--sheet-h, 0px))) }
+  /* ---------- startscherm ----------
+     De tekening vult het scherm, er loopt een signaalveeg overheen en boven de
+     mast staan uitdijende ringen: het beeld zendt uit terwijl de data binnenkomt. */
+  .splash{
+    position:fixed; inset:0; z-index:60; overflow:hidden;
+    background:#16281c url("start.jpg") center/cover no-repeat;
+    display:flex; align-items:flex-end; justify-content:center;
+    transition:opacity .5s ease, visibility .5s;
+  }
+  .splash.gone{opacity:0; visibility:hidden; pointer-events:none}
+  /* leesbaarheid onderaan, zonder de tekening plat te leggen */
+  .splash::after{
+    content:""; position:absolute; inset:auto 0 0 0; height:58%;
+    background:linear-gradient(to top, rgba(10,22,15,.94) 12%, rgba(10,22,15,.72) 42%, transparent);
+  }
+  /* de veeg: een smalle band die traag over het beeld zakt */
+  .splash .sweep{
+    position:absolute; left:-20%; right:-20%; height:32%; top:-32%;
+    background:linear-gradient(to bottom, transparent,
+      rgba(130,220,170,.16) 42%, rgba(200,255,225,.30) 50%, rgba(130,220,170,.16) 58%, transparent);
+    animation:dsweep 3.4s linear infinite;
+  }
+  @keyframes dsweep{ from{transform:translateY(0)} to{transform:translateY(420%)} }
+
+  /* uitdijende ringen op de top van de antennemast in de tekening */
+  .splash .tx{position:absolute; left:17.5%; top:7.5%; width:0; height:0}
+  .splash .tx i{
+    position:absolute; left:0; top:0; width:26vmin; height:26vmin; margin:-13vmin;
+    border:2px solid rgba(190,245,215,.7); border-radius:50%;
+    opacity:0; animation:dtx 2.7s ease-out infinite;
+  }
+  .splash .tx i:nth-child(2){animation-delay:.9s}
+  .splash .tx i:nth-child(3){animation-delay:1.8s}
+  @keyframes dtx{
+    0%  {transform:scale(.12); opacity:.85}
+    70% {opacity:.22}
+    100%{transform:scale(1.6); opacity:0}
+  }
+
+  .splash .sfoot{position:relative; z-index:2; width:100%; max-width:460px; padding:0 26px 42px; text-align:center}
+  .splash .sbrand{
+    color:#f2f7f3; font-size:30px; font-weight:700; letter-spacing:-.02em;
+    display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px;
+    text-shadow:0 2px 14px rgba(0,0,0,.55);
+  }
+  .splash .sbrand .mark{width:62px;height:auto;filter:drop-shadow(0 2px 10px rgba(0,0,0,.5))}
+  .splash .sload{color:#cfe3d6; font-size:13.5px; min-height:19px; letter-spacing:.01em}
+  .splash .sbar{
+    height:3px; border-radius:3px; background:rgba(255,255,255,.16);
+    overflow:hidden; margin:12px auto 8px; max-width:230px;
+  }
+  .splash .sbar i{
+    display:block; height:100%; width:8%; border-radius:3px;
+    background:linear-gradient(90deg,#52b788,#c08b4e);
+    transition:width .45s cubic-bezier(.4,0,.2,1);
+  }
+  .splash .sver{color:#8fae9d; font-size:11.5px; letter-spacing:.06em}
+  @media (prefers-reduced-motion:reduce){
+    .splash .sweep, .splash .tx i{animation:none; opacity:.25}
+  }
+
+  /* ---------- installbalk ---------- */
+  .instbar{
+    position:absolute; left:10px; right:10px; z-index:7;
+    bottom:calc(var(--nav-h, 62px) + 10px + env(safe-area-inset-bottom));
+    display:flex; align-items:center; gap:8px;
+    background:var(--green); color:#fff; border-radius:var(--radius);
+    padding:10px 12px; box-shadow:var(--shadow); font-size:13.5px;
+  }
+  .instbar .t{flex:1;line-height:1.35}
+  .instbar button{border:0;border-radius:9px;font:inherit;font-weight:600;cursor:pointer;padding:8px 12px}
+  .instbar .go{background:var(--amber);color:#fff}
+  .instbar .no{background:transparent;color:#cfe3d6;padding:8px 6px;font-weight:500}
+  body.embed .instbar{display:none}
+  /* Eén ding tegelijk onderaan: een open paneel gaat voor. */
+  body.sheet-open .instbar{display:none}
+
   body.embed .nav, body.embed .brand, body.embed .counts{display:none}
   body.embed .topbar{padding-top:8px}
   @media (max-width:520px){
@@ -338,7 +433,7 @@
 <div id="map"></div>
 
 <div class="topbar">
-  <div class="brand"><span class="mark">◈</span> Diana</div>
+  <div class="brand"><img class="mark" src="logo.png" alt="" width="30" height="20"> Diana</div>
   <div class="spacer"></div>
   <button class="iconbtn" id="btnSearch" aria-expanded="false" title="Zoeken">⌕</button>
   <button class="iconbtn" id="btnStyle"  aria-expanded="false" title="Kaartstijl">◐</button>
@@ -358,6 +453,7 @@
   <h4 data-i18n="lay.title">Lagen</h4>
   <div class="opt on" data-layer="onff"><span data-i18n="lay.onff">ONFF-gebieden</span> <span class="sw on"></span></div>
   <div class="opt on" data-layer="labels"><span data-i18n="lay.labels">Referentienummers</span> <span class="sw on"></span></div>
+  <div class="opt on" data-layer="nopoly" id="optNopoly" hidden><span data-i18n="lay.nopoly">Zonder grens (punt)</span> <span class="sw on"></span></div>
   <div class="opt" data-layer="spots"><span data-i18n="lay.spots">Spots &amp; agenda</span> <span class="sw"></span></div>
   <div class="opt disabled"><span data-i18n="lay.other">BCA, BLHA…</span> <span class="sw"></span></div>
   <p class="hint" data-i18n="lay.spothint">Spots komen live van WWFF Spotline en verversen elke 30 s.</p>
@@ -489,7 +585,33 @@
     </div>
   </div>
 
+  <div class="card">
+    <h4 style="margin:0 0 10px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
+        data-i18n="set.lang">Taal</h4>
+    <div class="langs" id="setLang" style="flex-wrap:wrap">
+      <button class="seg" data-lang="auto" data-i18n="set.langauto">Volg de browser</button>
+      <button class="seg" data-lang="en">EN</button>
+      <button class="seg" data-lang="nl">NL</button>
+      <button class="seg" data-lang="fr">FR</button>
+      <button class="seg" data-lang="de">DE</button>
+      <button class="seg" data-lang="da">DA</button>
+      <button class="seg" data-lang="it">IT</button>
+      <button class="seg" data-lang="es">ES</button>
+    </div>
+    <p class="hint" style="margin:8px 0 0" data-i18n="set.langnote">Zonder keuze start Diana in het Engels.</p>
+  </div>
+
+  <div class="card" id="instCard">
+    <h4 style="margin:0 0 6px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
+        data-i18n="inst.title">Als app installeren</h4>
+    <p class="hint" style="margin:0 0 10px" data-i18n="inst.lead">Eigen icoon, volledig scherm, en de kaart blijft werken zonder netwerk.</p>
+    <button class="btn amber" id="instBtn" hidden data-i18n="inst.btn">Op dit toestel installeren</button>
+    <p class="hint" id="instHow" style="margin:8px 0 0"></p>
+    <div class="fb" id="instFb"></div>
+  </div>
+
   <p class="privacy">🔒 <span data-i18n="set.localonly">Alles wat je hier invult blijft in de browser van dít toestel.</span></p>
+  <p class="hint" style="text-align:center;margin:2px 0 0"><span data-i18n="set.version">Versie</span> <span id="setVer"></span></p>
 </section>
 
 <section class="view" id="viewSelf">
@@ -583,6 +705,14 @@
   <p class="hint" data-i18n="rules.src">Bron: IARU Regio 1-bandplan en WWFF Global Rules §14.7. Je vergunningsklasse kan verder beperken.</p>
 </section>
 
+<!-- Verschijnt alleen als de browser installeren écht aanbiedt, en één keer:
+     wie hem wegklikt krijgt hem niet opnieuw. Instellingen blijft de vaste plek. -->
+<div class="instbar" id="instBar" hidden>
+  <span class="t" data-i18n="inst.bar">Diana als app op dit toestel zetten?</span>
+  <button class="go" id="instBarGo" data-i18n="inst.bargo">Installeren</button>
+  <button class="no" id="instBarNo" data-i18n="inst.barno">Niet nu</button>
+</div>
+
 <nav class="nav" id="nav">
   <button class="on" data-view="map"><span class="ic">◈</span><span data-i18n="nav.map">Kaart</span></button>
   <button data-view="viewSpots"><span class="ic">((·))</span><span data-i18n="nav.spots">Spots</span></button>
@@ -594,9 +724,25 @@
   <button data-view="viewRules"><span class="ic">☰</span><span data-i18n="nav.rules">Regels</span></button>
 </nav>
 
+<!-- ================= startscherm =================
+     Staat er meteen, terwijl de 3,7 MB zonedata en de kaartstijl binnenkomen.
+     Verdwijnt vanzelf zodra de kaart getekend is — of na een harde tijdslimiet,
+     want vastzitten op een startscherm is erger dan een kale kaart. -->
+<div class="splash" id="splash">
+  <div class="tx" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="sweep" aria-hidden="true"></div>
+  <div class="sfoot">
+    <div class="sbrand"><img class="mark" src="logo.png" alt="" width="62" height="41"> Diana</div>
+    <div class="sload" id="splashTxt">Laden…</div>
+    <div class="sbar"><i id="splashBar"></i></div>
+    <div class="sver" id="splashVer"></div>
+  </div>
+</div>
+
 <div class="status" id="status">
   <span class="dot"></span>
   <span class="txt"><div class="t1" id="stT1"></div><div class="t2" id="stT2"></div></span>
+  <button class="stx" id="stClose" aria-label="×">×</button>
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
@@ -609,12 +755,80 @@
 const STYLE_URL = s => `https://tiles.openfreemap.org/styles/${s}`;
 const $ = id => document.getElementById(id);
 
+/* Versie van de app zelf. Staat op het startscherm en in Instellingen, zodat een
+   melding als "het doet raar" te koppelen is aan een versie. */
+const APP_VERSION = '1.3.0';
+
+/* ---------- startscherm ----------
+ * Het duurt even voor 3,7 MB zonedata binnen is en de kaart getekend staat. In
+ * plaats van een witte pagina toont Diana de tekening met een signaal eroverheen,
+ * en gaat pas weg als er echt iets te zien is. Twee regels eromheen:
+ *   - minstens 900 ms, anders flitst het scherm alleen maar
+ *   - hoe dan ook weg na 9 s, want vastzitten op een startscherm is erger dan
+ *     een kale kaart met een foutmelding erop
+ */
+const splashStart = Date.now();
+let splashHidden = false;
+
+function splashStep(pct, key){
+  const bar = $('splashBar'), txt = $('splashTxt');
+  if(bar) bar.style.width = Math.max(8, Math.min(100, pct)) + '%';
+  if(txt && key) txt.textContent = t(key);
+}
+function splashDone(){
+  if(splashHidden) return;
+  splashHidden = true;
+  const wait = Math.max(0, 900 - (Date.now() - splashStart));
+  setTimeout(() => {
+    const el = $('splash');
+    if(!el) return;
+    el.classList.add('gone');
+    setTimeout(() => el.remove(), 600);   // ook uit de DOM: scheelt een laag over de kaart
+  }, wait);
+}
+setTimeout(splashDone, 9000);
+
+/* Opslag van dit toestel. Staat hier bovenaan omdat de taalkeuze, de
+   instellingen én het installatiescherm er alle drie bij moeten — een const
+   verderop in het bestand is nog niet bereikbaar wanneer die code loopt. */
+const remember = (k,v) => { try{ localStorage.setItem('diana.'+k, v==null?'':String(v)); }catch{} };
+const recall   = k => { try{ return localStorage.getItem('diana.'+k) || ''; }catch{ return ''; } };
+
 /* ================================================================== *
  * Talen — NL / FR / EN. Gebiedsnamen blijven onvertaald: die zijn
  * officieel en horen zo in het log.
  * ================================================================== */
 const STR = {
  "nl": {
+  "heat.viawwff": "Uit de WWFF-directory (totaal aantal QSO's en laatste activatie) — de jaartabellen van de ONFF-sheet waren niet bereikbaar.",
+  "splash.data": "Gebieden inlezen…",
+  "splash.draw": "Kaart opbouwen…",
+  "splash.map": "Kaart klaarzetten…",
+  "splash.ready": "Klaar",
+  "set.version": "Versie",
+  "set.lang": "Taal",
+  "set.langauto": "Volg de browser",
+  "set.langnote": "Zonder keuze start Diana in het Engels.",
+  "lay.nopoly": "Zonder grens (punt)",
+  "zone.nopoly": "geen grens",
+  "zone.place": "Gemeente",
+  "zone.nopolynote": "Voor deze referentie zit er geen grens in de ONFF-data. Het punt is een benadering — Diana kan dus niet zeggen of je erbinnen staat.",
+  "map.nopolycount": "zonder grens",
+  "inst.title": "Als app installeren",
+  "inst.lead": "Eigen icoon, volledig scherm, en de kaart blijft werken zonder netwerk.",
+  "inst.btn": "Op dit toestel installeren",
+  "inst.done": "Diana is op dit toestel geïnstalleerd.",
+  "inst.working": "Even geduld…",
+  "inst.declined": "Niet geïnstalleerd. Je kan het hier altijd opnieuw proberen.",
+  "inst.bar": "Diana als app op dit toestel zetten?",
+  "inst.bargo": "Installeren",
+  "inst.barno": "Niet nu",
+  "inst.ios": "Tik onderaan op Deel <b>⬆︎</b> en daarna op <b>Zet op beginscherm</b>.",
+  "inst.iosother": "Op iPhone en iPad kan dit alleen vanuit <b>Safari</b>. Open Diana daar en gebruik Deel <b>⬆︎</b> → <b>Zet op beginscherm</b>.",
+  "inst.android": "Open het menu <b>⋮</b> van je browser en kies <b>Toevoegen aan startscherm</b>.",
+  "inst.desktop": "Klik op het installatie-icoon in de adresbalk, of open het menu <b>⋮</b> en kies <b>Diana installeren</b>.",
+  "inst.firefox": "Firefox kan webapps niet installeren. Zet Diana als bladwijzer, of open ze in Chrome of Edge om ze te installeren.",
+  "inst.safari": "Kies in de menubalk <b>Archief ▸ Voeg toe aan Dock</b> (macOS Sonoma of nieuwer).",
   "lay.fit": "⤢ Alle spots in beeld",
   "spots.unplaced": "zonder gekende locatie",
   "nav.admin": "Beheer",
@@ -821,6 +1035,35 @@ const STR = {
   "rules.o.log": "ADIF naar onfflogapproval@gmail.com"
  },
  "en": {
+  "heat.viawwff": "From the WWFF directory (total QSOs and last activation) — the ONFF sheet's per-year tables could not be reached.",
+  "splash.data": "Reading zones…",
+  "splash.draw": "Building the map…",
+  "splash.map": "Preparing the map…",
+  "splash.ready": "Ready",
+  "set.version": "Version",
+  "set.lang": "Language",
+  "set.langauto": "Follow the browser",
+  "set.langnote": "With no choice made, Diana starts in English.",
+  "lay.nopoly": "No boundary (point)",
+  "zone.nopoly": "no boundary",
+  "zone.place": "Municipality",
+  "zone.nopolynote": "The ONFF data has no boundary for this reference. The marker is an approximate location, so Diana cannot tell you whether you are inside it.",
+  "map.nopolycount": "without a boundary",
+  "inst.title": "Install as an app",
+  "inst.lead": "Its own icon, full screen, and the map keeps working without a network.",
+  "inst.btn": "Install on this device",
+  "inst.done": "Diana is installed on this device.",
+  "inst.working": "One moment…",
+  "inst.declined": "Not installed. You can try again here whenever you like.",
+  "inst.bar": "Add Diana to this device as an app?",
+  "inst.bargo": "Install",
+  "inst.barno": "Not now",
+  "inst.ios": "Tap Share <b>⬆︎</b> at the bottom, then <b>Add to Home Screen</b>.",
+  "inst.iosother": "On iPhone and iPad this only works from <b>Safari</b>. Open Diana there and use Share <b>⬆︎</b> → <b>Add to Home Screen</b>.",
+  "inst.android": "Open your browser's <b>⋮</b> menu and choose <b>Add to Home screen</b>.",
+  "inst.desktop": "Click the install icon in the address bar, or open the <b>⋮</b> menu and choose <b>Install Diana</b>.",
+  "inst.firefox": "Firefox cannot install web apps. Bookmark Diana, or open it in Chrome or Edge to install it.",
+  "inst.safari": "In the menu bar choose <b>File ▸ Add to Dock</b> (macOS Sonoma or newer).",
   "lay.fit": "⤢ Fit all spots",
   "spots.unplaced": "without a known location",
   "nav.admin": "Admin",
@@ -1027,6 +1270,35 @@ const STR = {
   "rules.o.log": "ADIF to onfflogapproval@gmail.com"
  },
  "fr": {
+  "heat.viawwff": "D'après l'annuaire WWFF (total QSO et dernière activation) — les tableaux annuels de la feuille ONFF étaient inaccessibles.",
+  "splash.data": "Lecture des zones…",
+  "splash.draw": "Construction de la carte…",
+  "splash.map": "Préparation de la carte…",
+  "splash.ready": "Prêt",
+  "set.version": "Version",
+  "set.lang": "Langue",
+  "set.langauto": "Suivre le navigateur",
+  "set.langnote": "Sans choix, Diana démarre en anglais.",
+  "lay.nopoly": "Sans limite (point)",
+  "zone.nopoly": "sans limite",
+  "zone.place": "Commune",
+  "zone.nopolynote": "Les données ONFF ne contiennent pas de limite pour cette référence. Le point est approximatif : Diana ne peut donc pas dire si vous êtes à l'intérieur.",
+  "map.nopolycount": "sans limite",
+  "inst.title": "Installer comme application",
+  "inst.lead": "Sa propre icône, plein écran, et la carte continue de fonctionner sans réseau.",
+  "inst.btn": "Installer sur cet appareil",
+  "inst.done": "Diana est installée sur cet appareil.",
+  "inst.working": "Un instant…",
+  "inst.declined": "Non installée. Vous pouvez réessayer ici quand vous voulez.",
+  "inst.bar": "Ajouter Diana comme application sur cet appareil ?",
+  "inst.bargo": "Installer",
+  "inst.barno": "Pas maintenant",
+  "inst.ios": "Touchez Partager <b>⬆︎</b> en bas, puis <b>Sur l'écran d'accueil</b>.",
+  "inst.iosother": "Sur iPhone et iPad, cela ne fonctionne que depuis <b>Safari</b>. Ouvrez Diana dans Safari puis Partager <b>⬆︎</b> → <b>Sur l'écran d'accueil</b>.",
+  "inst.android": "Ouvrez le menu <b>⋮</b> de votre navigateur et choisissez <b>Ajouter à l'écran d'accueil</b>.",
+  "inst.desktop": "Cliquez sur l'icône d'installation dans la barre d'adresse, ou menu <b>⋮</b> → <b>Installer Diana</b>.",
+  "inst.firefox": "Firefox ne peut pas installer d'applications web. Ajoutez Diana aux favoris, ou ouvrez-la dans Chrome ou Edge.",
+  "inst.safari": "Dans la barre de menus, choisissez <b>Fichier ▸ Ajouter au Dock</b> (macOS Sonoma ou plus récent).",
   "lay.fit": "⤢ Afficher tous les spots",
   "spots.unplaced": "sans position connue",
   "nav.admin": "Gestion",
@@ -1233,6 +1505,35 @@ const STR = {
   "rules.o.log": "ADIF vers onfflogapproval@gmail.com"
  },
  "de": {
+  "heat.viawwff": "Aus dem WWFF-Verzeichnis (QSO-Gesamtzahl und letzte Aktivierung) — die Jahrestabellen der ONFF-Tabelle waren nicht erreichbar.",
+  "splash.data": "Gebiete werden gelesen…",
+  "splash.draw": "Karte wird aufgebaut…",
+  "splash.map": "Karte wird vorbereitet…",
+  "splash.ready": "Fertig",
+  "set.version": "Version",
+  "set.lang": "Sprache",
+  "set.langauto": "Dem Browser folgen",
+  "set.langnote": "Ohne Auswahl startet Diana auf Englisch.",
+  "lay.nopoly": "Ohne Grenze (Punkt)",
+  "zone.nopoly": "keine Grenze",
+  "zone.place": "Gemeinde",
+  "zone.nopolynote": "Für diese Referenz enthalten die ONFF-Daten keine Grenze. Der Punkt ist eine Näherung — Diana kann daher nicht sagen, ob du dich darin befindest.",
+  "map.nopolycount": "ohne Grenze",
+  "inst.title": "Als App installieren",
+  "inst.lead": "Eigenes Symbol, Vollbild, und die Karte funktioniert auch ohne Netz weiter.",
+  "inst.btn": "Auf diesem Gerät installieren",
+  "inst.done": "Diana ist auf diesem Gerät installiert.",
+  "inst.working": "Einen Moment…",
+  "inst.declined": "Nicht installiert. Du kannst es hier jederzeit erneut versuchen.",
+  "inst.bar": "Diana als App auf dieses Gerät legen?",
+  "inst.bargo": "Installieren",
+  "inst.barno": "Jetzt nicht",
+  "inst.ios": "Tippe unten auf Teilen <b>⬆︎</b> und dann auf <b>Zum Home-Bildschirm</b>.",
+  "inst.iosother": "Auf iPhone und iPad geht das nur aus <b>Safari</b>. Öffne Diana dort und nutze Teilen <b>⬆︎</b> → <b>Zum Home-Bildschirm</b>.",
+  "inst.android": "Öffne das <b>⋮</b>-Menü deines Browsers und wähle <b>Zum Startbildschirm hinzufügen</b>.",
+  "inst.desktop": "Klicke auf das Installationssymbol in der Adressleiste, oder Menü <b>⋮</b> → <b>Diana installieren</b>.",
+  "inst.firefox": "Firefox kann keine Web-Apps installieren. Setze ein Lesezeichen, oder öffne Diana in Chrome oder Edge.",
+  "inst.safari": "Wähle in der Menüleiste <b>Ablage ▸ Zum Dock hinzufügen</b> (macOS Sonoma oder neuer).",
   "lay.fit": "⤢ Alle Spots einpassen",
   "spots.unplaced": "ohne bekannte Position",
   "nav.admin": "Verwaltung",
@@ -1439,6 +1740,35 @@ const STR = {
   "rules.o.log": "ADIF an onfflogapproval@gmail.com"
  },
  "da": {
+  "heat.viawwff": "Fra WWFF-mappen (samlet antal QSO'er og seneste aktivering) — ONFF-arkets årstabeller kunne ikke nås.",
+  "splash.data": "Indlæser områder…",
+  "splash.draw": "Bygger kortet…",
+  "splash.map": "Gør kortet klar…",
+  "splash.ready": "Klar",
+  "set.version": "Version",
+  "set.lang": "Sprog",
+  "set.langauto": "Følg browseren",
+  "set.langnote": "Uden et valg starter Diana på engelsk.",
+  "lay.nopoly": "Uden grænse (punkt)",
+  "zone.nopoly": "ingen grænse",
+  "zone.place": "Kommune",
+  "zone.nopolynote": "ONFF-dataene har ingen grænse for denne reference. Punktet er omtrentligt — Diana kan derfor ikke sige, om du står inde i området.",
+  "map.nopolycount": "uden grænse",
+  "inst.title": "Installer som app",
+  "inst.lead": "Eget ikon, fuld skærm, og kortet virker fortsat uden net.",
+  "inst.btn": "Installer på denne enhed",
+  "inst.done": "Diana er installeret på denne enhed.",
+  "inst.working": "Et øjeblik…",
+  "inst.declined": "Ikke installeret. Du kan altid prøve igen her.",
+  "inst.bar": "Vil du lægge Diana på denne enhed som app?",
+  "inst.bargo": "Installer",
+  "inst.barno": "Ikke nu",
+  "inst.ios": "Tryk på Del <b>⬆︎</b> nederst, og derefter <b>Føj til hjemmeskærm</b>.",
+  "inst.iosother": "På iPhone og iPad virker det kun fra <b>Safari</b>. Åbn Diana der, og brug Del <b>⬆︎</b> → <b>Føj til hjemmeskærm</b>.",
+  "inst.android": "Åbn browserens <b>⋮</b>-menu og vælg <b>Føj til startskærm</b>.",
+  "inst.desktop": "Klik på installationsikonet i adresselinjen, eller menuen <b>⋮</b> → <b>Installer Diana</b>.",
+  "inst.firefox": "Firefox kan ikke installere webapps. Sæt et bogmærke, eller åbn Diana i Chrome eller Edge.",
+  "inst.safari": "Vælg <b>Arkiv ▸ Føj til Dock</b> i menulinjen (macOS Sonoma eller nyere).",
   "lay.fit": "⤢ Vis alle spots",
   "spots.unplaced": "uden kendt position",
   "nav.admin": "Admin",
@@ -1645,6 +1975,35 @@ const STR = {
   "rules.o.log": "ADIF til onfflogapproval@gmail.com"
  },
  "it": {
+  "heat.viawwff": "Dalla directory WWFF (QSO totali e ultima attivazione) — le tabelle annuali del foglio ONFF non erano raggiungibili.",
+  "splash.data": "Lettura delle zone…",
+  "splash.draw": "Costruzione della mappa…",
+  "splash.map": "Preparazione della mappa…",
+  "splash.ready": "Pronto",
+  "set.version": "Versione",
+  "set.lang": "Lingua",
+  "set.langauto": "Segui il browser",
+  "set.langnote": "Senza una scelta, Diana parte in inglese.",
+  "lay.nopoly": "Senza confine (punto)",
+  "zone.nopoly": "nessun confine",
+  "zone.place": "Comune",
+  "zone.nopolynote": "I dati ONFF non contengono un confine per questo riferimento. Il punto è approssimativo: Diana non può dirti se ti trovi all'interno.",
+  "map.nopolycount": "senza confine",
+  "inst.title": "Installa come app",
+  "inst.lead": "Icona propria, schermo intero, e la mappa continua a funzionare senza rete.",
+  "inst.btn": "Installa su questo dispositivo",
+  "inst.done": "Diana è installata su questo dispositivo.",
+  "inst.working": "Un attimo…",
+  "inst.declined": "Non installata. Puoi riprovare qui quando vuoi.",
+  "inst.bar": "Vuoi aggiungere Diana a questo dispositivo come app?",
+  "inst.bargo": "Installa",
+  "inst.barno": "Non ora",
+  "inst.ios": "Tocca Condividi <b>⬆︎</b> in basso, poi <b>Aggiungi a Home</b>.",
+  "inst.iosother": "Su iPhone e iPad funziona solo da <b>Safari</b>. Apri Diana lì e usa Condividi <b>⬆︎</b> → <b>Aggiungi a Home</b>.",
+  "inst.android": "Apri il menu <b>⋮</b> del browser e scegli <b>Aggiungi a schermata Home</b>.",
+  "inst.desktop": "Clicca sull'icona di installazione nella barra degli indirizzi, oppure menu <b>⋮</b> → <b>Installa Diana</b>.",
+  "inst.firefox": "Firefox non può installare web app. Aggiungi Diana ai preferiti, o aprila in Chrome o Edge.",
+  "inst.safari": "Nella barra dei menu scegli <b>File ▸ Aggiungi al Dock</b> (macOS Sonoma o successivo).",
   "lay.fit": "⤢ Mostra tutti gli spot",
   "spots.unplaced": "senza posizione nota",
   "nav.admin": "Gestione",
@@ -1851,6 +2210,35 @@ const STR = {
   "rules.o.log": "ADIF a onfflogapproval@gmail.com"
  },
  "es": {
+  "heat.viawwff": "Del directorio WWFF (QSO totales y última activación) — no se pudo acceder a las tablas anuales de la hoja ONFF.",
+  "splash.data": "Leyendo las zonas…",
+  "splash.draw": "Construyendo el mapa…",
+  "splash.map": "Preparando el mapa…",
+  "splash.ready": "Listo",
+  "set.version": "Versión",
+  "set.lang": "Idioma",
+  "set.langauto": "Seguir el navegador",
+  "set.langnote": "Sin elección, Diana arranca en inglés.",
+  "lay.nopoly": "Sin límite (punto)",
+  "zone.nopoly": "sin límite",
+  "zone.place": "Municipio",
+  "zone.nopolynote": "Los datos de ONFF no incluyen un límite para esta referencia. El punto es aproximado: Diana no puede decirte si estás dentro.",
+  "map.nopolycount": "sin límite",
+  "inst.title": "Instalar como aplicación",
+  "inst.lead": "Icono propio, pantalla completa, y el mapa sigue funcionando sin red.",
+  "inst.btn": "Instalar en este dispositivo",
+  "inst.done": "Diana está instalada en este dispositivo.",
+  "inst.working": "Un momento…",
+  "inst.declined": "No se instaló. Puedes intentarlo de nuevo aquí cuando quieras.",
+  "inst.bar": "¿Añadir Diana a este dispositivo como aplicación?",
+  "inst.bargo": "Instalar",
+  "inst.barno": "Ahora no",
+  "inst.ios": "Toca Compartir <b>⬆︎</b> abajo y luego <b>Añadir a pantalla de inicio</b>.",
+  "inst.iosother": "En iPhone y iPad solo funciona desde <b>Safari</b>. Abre Diana ahí y usa Compartir <b>⬆︎</b> → <b>Añadir a pantalla de inicio</b>.",
+  "inst.android": "Abre el menú <b>⋮</b> del navegador y elige <b>Añadir a pantalla de inicio</b>.",
+  "inst.desktop": "Haz clic en el icono de instalación de la barra de direcciones, o menú <b>⋮</b> → <b>Instalar Diana</b>.",
+  "inst.firefox": "Firefox no puede instalar aplicaciones web. Guarda Diana en marcadores, o ábrela en Chrome o Edge.",
+  "inst.safari": "En la barra de menús elige <b>Archivo ▸ Añadir al Dock</b> (macOS Sonoma o posterior).",
   "lay.fit": "⤢ Ver todos los spots",
   "spots.unplaced": "sin posición conocida",
   "nav.admin": "Gestión",
@@ -2060,15 +2448,30 @@ const STR = {
 
 /* Volgorde: wat de gebruiker koos > de browsertaal als we die spreken > Engels. */
 const LANGS = ['en','nl','fr','de','da','it','es'];
-function pickLang(){
-  const q = new URLSearchParams(location.search).get('lang');
-  if(q && STR[q]) return q;
-  const saved = (()=>{ try{ return localStorage.getItem('diana.lang'); }catch{ return null; } })();
-  if(saved && STR[saved]) return saved;
+/* Volgorde: ?lang= in de URL, dan de keuze uit Instellingen, dan Engels.
+ *
+ * "auto" is een uitdrukkelijke keuze om de browsertaal te volgen — wie niets
+ * kiest krijgt Engels, niet de taal die zijn browser toevallig meldt. Zo is de
+ * standaard voorspelbaar en staat de keuze op één plek: Instellingen. */
+function browserLang(){
   const nav = (navigator.language || 'en').slice(0,2).toLowerCase();
   return STR[nav] ? nav : 'en';
 }
+function savedLang(){
+  try{ return localStorage.getItem('diana.lang') || ''; }catch{ return ''; }
+}
+function pickLang(){
+  const q = new URLSearchParams(location.search).get('lang');
+  if(q && STR[q]) return q;
+  const saved = savedLang();
+  if(saved === 'auto') return browserLang();
+  if(saved && STR[saved]) return saved;
+  return 'en';
+}
 let lang = pickLang();
+/* Wat de gebruiker gekozen heeft ('auto', een taalcode, of niets = Engels).
+   Losgekoppeld van `lang`, want dat is de opgeloste taal van dit moment. */
+let langPref = savedLang() || 'en';
 const t = k => (STR[lang] && STR[lang][k]) || STR.nl[k] || k;
 function locale(){ return {nl:'nl-BE',fr:'fr-BE',en:'en-GB',de:'de-DE',da:'da-DK',it:'it-IT',es:'es-ES'}[lang] || 'en-GB'; }
 
@@ -2083,7 +2486,9 @@ function applyLang(){
    van het scherm in de oude taal staan. */
 function rerender(){
   try{
-    if(zones) $('counts').innerHTML = `<b>${zones.features.length}</b> ${t('map.areas')}`;
+    if(zones) $('counts').innerHTML = `<b>${zones.features.length}</b> ${t('map.areas')}`
+      + (noPoly.features.length ? ` · ${noPoly.features.length} ${t('map.nopolycount')}` : '');
+    renderInstall();
     if(selected) select(selected);
     renderSpots();
     renderRules();
@@ -2100,8 +2505,15 @@ let index = null;          // lichte index
 let currentStyle = 'liberty';
 let showLabels = true;
 let showZones = true;
+let showNoPoly = true;
 let selected = null;
 let watchId = null;
+
+/* Referenties die op de ONFF-lijst staan maar géén grens in het KMZ hebben.
+   Ze worden als punt getoond — zichtbaar, maar nadrukkelijk geen grens: de
+   "sta ik erin"-test slaat ze daarom over. */
+let noPoly = {type:'FeatureCollection', features:[]};
+const noPolyByRef = new Map();
 
 /* ---------- data laden ---------- */
 async function fetchFirst(urls){
@@ -2125,7 +2537,26 @@ async function loadData(){
     const b = bboxOf(f.geometry);
     return {...f.properties, bbox:b};
   });
-  $('counts').innerHTML = `<b>${zones.features.length}</b> ${t('map.areas')}`;
+
+  // Punten zonder grens staan in een apart bestand. Ontbreekt het (oudere data,
+  // of een build zonder referentielijst), dan gaat de app gewoon door.
+  if (window.DIANA_POINTS) noPoly = window.DIANA_POINTS;
+  else {
+    try{ noPoly = await fetchFirst(['./data/onff-points.geojson','../data/onff-points.geojson']); }
+    catch{ noPoly = {type:'FeatureCollection', features:[]}; }
+  }
+  noPolyByRef.clear();
+  for(const f of (noPoly.features||[])){
+    noPolyByRef.set(f.properties.ref, f);
+    // Mee in de index, dus vindbaar in het zoekveld en bruikbaar als positie
+    // voor een agenda-item. Zonder bbox — die hebben ze niet.
+    index.push({...f.properties, lon:f.geometry.coordinates[0], lat:f.geometry.coordinates[1]});
+  }
+
+  $('counts').innerHTML = `<b>${zones.features.length}</b> ${t('map.areas')}`
+    + (noPoly.features.length ? ` · ${noPoly.features.length} ${t('map.nopolycount')}` : '');
+  const optNp = $('optNopoly');
+  if(optNp) optNp.hidden = noPoly.features.length === 0;
 }
 
 /* Eén labelpunt per referentie, op het grootste deelgebied — daar waar je in het
@@ -2207,6 +2638,8 @@ function paintZones(){
     paint:{'text-color':'#1b4332','text-halo-color':'#f6f4ee','text-halo-width':1.6}
   });
 
+  paintNoPoly();
+
   map.on('click','onff-fill', e => {
     // Zones kunnen overlappen — toon wat er onder de vinger ligt, niet alleen de bovenste.
     const hits = map.queryRenderedFeatures(e.point,{layers:['onff-fill']});
@@ -2216,20 +2649,99 @@ function paintZones(){
   map.on('mouseleave','onff-fill',()=>map.getCanvas().style.cursor='');
 }
 
+/* ---------- referenties zonder grens ----------
+ *
+ * Een gestippelde ring, geen vlak. Dat verschil moet je op de kaart kunnen zien
+ * zonder de legende te lezen: een grens is een grens, een punt is een gok van
+ * ONFF's eigen lijst. Het icoon wordt op canvas getekend — geen extern bestand.
+ */
+function addNoPolyIcon(){
+  if(map.hasImage('diana-nopoly')) return;
+  const d = 44, r = 15, c = d/2, dpr = 2, cv = document.createElement('canvas');
+  cv.width = cv.height = d*dpr;
+  const x = cv.getContext('2d');
+  x.scale(dpr,dpr);
+
+  x.beginPath(); x.arc(c,c,r+3,0,Math.PI*2);
+  x.fillStyle = 'rgba(246,244,238,.85)'; x.fill();       // leesbaar op elke kaartstijl
+
+  x.setLineDash([4,3.2]); x.lineWidth = 2.4; x.strokeStyle = '#1b4332';
+  x.beginPath(); x.arc(c,c,r,0,Math.PI*2); x.stroke();
+
+  x.setLineDash([]); x.beginPath(); x.arc(c,c,3.6,0,Math.PI*2);
+  x.fillStyle = '#d97706'; x.fill();                      // amber = "bij benadering"
+
+  map.addImage('diana-nopoly', {width:d*dpr, height:d*dpr, data:x.getImageData(0,0,d*dpr,d*dpr).data},
+               {pixelRatio:dpr});
+}
+
+function paintNoPoly(){
+  if(!map.isStyleLoaded()) return;
+  if(!noPoly || !noPoly.features.length) return;
+  if(map.getSource('onff-np')) return;
+
+  addNoPolyIcon();
+  map.addSource('onff-np',{type:'geojson',data:noPoly});
+  map.addLayer({
+    id:'np-dot', type:'symbol', source:'onff-np',
+    layout:{'icon-image':'diana-nopoly','icon-allow-overlap':true,
+            'icon-size':['interpolate',['linear'],['zoom'],7,0.6,12,1],
+            'visibility': (showZones && showNoPoly) ? 'visible':'none'}
+  });
+  if(map.getStyle().glyphs) map.addLayer({
+    id:'np-label', type:'symbol', source:'onff-np',
+    layout:{'text-field':['get','ref'],'text-font':['Noto Sans Regular'],'text-size':11,
+            'text-offset':[0,1.4],'text-anchor':'top','text-allow-overlap':false,'text-padding':6,
+            'visibility': (showZones && showNoPoly && showLabels) ? 'visible':'none'},
+    paint:{'text-color':'#1b4332','text-halo-color':'#f6f4ee','text-halo-width':1.6}
+  });
+
+  if(!npBound){          // lagen worden na elke stijlwissel opnieuw gezet, handlers niet
+    npBound = true;
+    map.on('click','np-dot', e => select(e.features[0].properties.ref));
+    map.on('mouseenter','np-dot',()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave','np-dot',()=>map.getCanvas().style.cursor='');
+  }
+}
+let npBound = false;
+
 /* De data staat los van de kaart. Valt de achtergrondkaart weg — geen netwerk,
    nog niets in de cache — dan blijven zoeken, sessie, regels en heatmap gewoon
    werken. Alleen de tegels ontbreken dan. */
+$('splashVer').textContent = 'v' + APP_VERSION;
+$('setVer').textContent = APP_VERSION;
+splashStep(22, 'splash.data');
+// In een iframe hoort geen startscherm: dat is het kader van iemand anders.
+if(new URLSearchParams(location.search).get('embed') === '1') splashDone();
+
 const dataReady = loadData().then(()=>{
+  splashStep(70, 'splash.draw');
   applyLang();
   [...$('langPick').children].forEach(b=>b.classList.toggle('on', b.dataset.lang===lang));
   redrawOverlays();
   loadSettingsUI();
   applyHomeView();
   try{ applyEmbed(); }catch(err){ console.error('embed-parameters:', err); }
+  whenDrawn();
 }).catch(err=>{
   $('counts').textContent = t('map.datafail');
   console.error('data:', err);
+  splashDone();              // een fout is geen reden om op het startscherm vast te zitten
 });
+
+/* Het startscherm gaat weg zodra de zones écht getekend zijn — niet zodra de
+   data binnen is. Anders zie je een lege kaart die zich nog aan het vullen is. */
+function whenDrawn(tries){
+  tries = tries || 0;
+  const drawn = map.isStyleLoaded() && map.getLayer('onff-fill');
+  if(drawn || tries > 60){    // ~6 s, dan tonen we gewoon wat er is
+    splashStep(100, 'splash.ready');
+    setTimeout(splashDone, 260);
+    return;
+  }
+  if(tries === 12) splashStep(88, 'splash.map');
+  setTimeout(()=>whenDrawn(tries+1), 100);
+}
 
 map.on('load', () => dataReady.then(redrawOverlays));
 map.on('error', e => {
@@ -2240,8 +2752,9 @@ map.on('error', e => {
 
 $('langPick').addEventListener('click', e=>{
   const b=e.target.closest('.seg[data-lang]'); if(!b) return;
-  lang = b.dataset.lang;
+  lang = langPref = b.dataset.lang;     // via de knoppen bovenaan is het altijd een vaste keuze
   [...$('langPick').children].forEach(c=>c.classList.toggle('on',c===b));
+  [...$('setLang').children].forEach(c=>c.classList.toggle('on',c.dataset.lang===langPref));
   saveSettings();
   applyLang();
 });
@@ -2254,7 +2767,7 @@ function applyEmbed(){
   if(q.get('ref')) select(q.get('ref').toUpperCase());
   if(q.get('prov')){
     const p=q.get('prov').toLowerCase();
-    const sel = index.filter(z=>(z.prov||'').toLowerCase().includes(p));
+    const sel = index.filter(z=>z.bbox && (z.prov||'').toLowerCase().includes(p));
     if(sel.length){
       const b=[Math.min(...sel.map(z=>z.bbox[0])),Math.min(...sel.map(z=>z.bbox[1])),
                Math.max(...sel.map(z=>z.bbox[2])),Math.max(...sel.map(z=>z.bbox[3]))];
@@ -2301,6 +2814,10 @@ function redrawOverlays(){
     redrawPending = false;
     try{
       paintZones();
+      // Apart aanroepen, niet alleen vanuit paintZones: die stopt meteen als de
+      // bron er al is, en de punten worden ná de zones geladen. Anders komen ze
+      // er nooit bij — dezelfde valkuil als eerder bij de spots.
+      paintNoPoly();
       if(showSpots) paintSpots();
       applyVisibility();
       reselect();
@@ -2315,6 +2832,10 @@ function applyVisibility(){
   ['onff-fill','onff-line'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
   if(map.getLayer('onff-label'))
     map.setLayoutProperty('onff-label','visibility',(showZones&&showLabels)?'visible':'none');
+  if(map.getLayer('np-dot'))
+    map.setLayoutProperty('np-dot','visibility',(showZones&&showNoPoly)?'visible':'none');
+  if(map.getLayer('np-label'))
+    map.setLayoutProperty('np-label','visibility',(showZones&&showNoPoly&&showLabels)?'visible':'none');
   const sv = showSpots ? 'visible' : 'none';
   ['spots-pulse','spots-icon','spots-call','agenda-dot','agenda-label',
    'spot-arcs-line','agenda-arcs-line']
@@ -2325,6 +2846,35 @@ function applyVisibility(){
 function featureIdOf(ref){ return zones.features.findIndex(f=>f.properties.ref===ref); }
 
 function reselect(){ if(selected) markSelected(selected); }
+
+function clearSelection(){
+  if(map._lastSel!=null && map.getSource('onff')){
+    map.setFeatureState({source:'onff',id:map._lastSel},{sel:false});
+    map._lastSel = null;
+  }
+}
+
+/* Een referentie zonder grens. Hetzelfde paneel, maar zonder oppervlakte en
+   zonder percelen, mét de reden erbij — anders lijkt een halfleeg paneel op een
+   fout in plaats van op een gat in de brondata. */
+function selectPoint(f){
+  const p = f.properties;
+  selected = p.ref;
+  clearSelection();
+
+  $('badges').innerHTML =
+    `<span class="pill">${p.ref}</span>` +
+    (p.prov ? `<span class="pill grey">${p.prov}</span>` : '') +
+    `<span class="pill amber">${t('zone.nopoly')}</span>`;
+  $('zoneName').textContent = p.name || p.ref;
+  $('facts').innerHTML = p.place
+    ? `<div class="fact"><div class="k">${t('zone.place')}</div><div class="v">${p.place}</div></div>` : '';
+  $('zoneNote').textContent = t('zone.nopolynote');
+
+  openSheet();
+  map.easeTo({center:f.geometry.coordinates, zoom:Math.max(map.getZoom(),12),
+              padding:{top:90,bottom:260,left:40,right:40}});
+}
 
 function markSelected(ref){
   const id = featureIdOf(ref);
@@ -2345,7 +2895,7 @@ const FIELDS = [
 
 function select(ref, alsoIn){
   const f = zones.features.find(x=>x.properties.ref===ref);
-  if(!f) return;
+  if(!f){ const p = noPolyByRef.get(ref); if(p) selectPoint(p); return; }
   selected = ref;
   const p = f.properties;
 
@@ -2416,7 +2966,8 @@ $('q').addEventListener('input', e => {
   const rows = search(e.target.value);
   $('results').innerHTML = rows.map(z =>
     `<div class="res" data-ref="${z.ref}"><span class="r">${z.ref.replace('ONFF-','')}</span>
-     <span class="n">${z.name}</span><span class="p">${z.prov||''}</span></div>`).join('')
+     <span class="n">${z.name}${z.nopoly?` <span class="np">◌ ${t('zone.nopoly')}</span>`:''}</span>
+     <span class="p">${z.prov||''}</span></div>`).join('')
     || (e.target.value.trim().length>1 ? '<div class="res"><span class="n">Niets gevonden</span></div>' : '');
 });
 $('results').addEventListener('click', e => {
@@ -2457,6 +3008,7 @@ $('popLayers').addEventListener('click', e => {
   const opt = e.target.closest('.opt[data-layer]'); if(!opt) return;
   if(opt.dataset.layer==='onff') showZones = !showZones;
   if(opt.dataset.layer==='labels') showLabels = !showLabels;
+  if(opt.dataset.layer==='nopoly') showNoPoly = !showNoPoly;
   if(opt.dataset.layer==='spots'){ showSpots = !showSpots; if(showSpots){ startSpots(); redrawOverlays(); } }
   opt.classList.toggle('on');
   opt.querySelector('.sw').classList.toggle('on');
@@ -2836,6 +3388,149 @@ $('closeSpot').onclick = ()=>{
   $('viewHeat').classList.remove('tucked');
 };
 
+/* ================================================================== *
+ * Diana op het toestel zetten
+ *
+ * Chrome-achtige browsers geven ons `beforeinstallprompt`: die bewaren we en
+ * spelen we af wanneer de gebruiker erom vraagt. Safari op iOS geeft dat niet —
+ * daar bestaat geen API voor installeren, alleen Deel → Zet op beginscherm. Dus
+ * tonen we per platform wat er écht kan, in plaats van een knop die niets doet.
+ * ================================================================== */
+let deferredInstall = null;
+
+const isStandalone = () =>
+  matchMedia('(display-mode: standalone)').matches ||
+  matchMedia('(display-mode: minimal-ui)').matches ||
+  navigator.standalone === true;
+
+function platform(){
+  const ua = navigator.userAgent;
+  const ios = /iPad|iPhone|iPod/.test(ua) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if(ios) return /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua) ? 'iosother' : 'ios';
+  if(/Android/.test(ua)) return 'android';
+  if(/Firefox\//.test(ua)) return 'firefox';
+  if(/Safari\//.test(ua) && !/Chrome|Chromium|Edg\//.test(ua)) return 'safari';
+  return 'desktop';
+}
+
+function renderInstall(){
+  const btn = $('instBtn'), how = $('instHow'), card = $('instCard');
+  if(!btn || !card) return;
+
+  if(isStandalone() || recall('installed') === '1'){
+    btn.hidden = true;
+    how.innerHTML = '✓ ' + t('inst.done');
+    return;
+  }
+  if(deferredInstall){
+    btn.hidden = false;
+    how.innerHTML = '';        // de browser doet het zelf; uitleg is dan ruis
+    return;
+  }
+  btn.hidden = true;
+  how.innerHTML = t('inst.' + platform());
+}
+
+function showInstallBar(){
+  // Eén keer vragen. Wie hem wegklikt ziet hem niet meer; Instellingen blijft.
+  if(recall('inst.asked') === '1' || isStandalone()) return;
+  if(document.body.classList.contains('embed')) return;
+  $('instBar').hidden = false;
+}
+function hideInstallBar(){ $('instBar').hidden = true; }
+
+addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  renderInstall();
+  showInstallBar();
+});
+
+addEventListener('appinstalled', () => {
+  deferredInstall = null;
+  remember('installed','1');
+  hideInstallBar();
+  renderInstall();
+});
+
+async function runInstall(){
+  if(!deferredInstall){ renderInstall(); return; }
+  hideInstallBar();
+  remember('inst.asked','1');
+  const prompt = deferredInstall;
+  deferredInstall = null;                 // een prompt-event is eenmalig
+  try{
+    prompt.prompt();
+    const { outcome } = await prompt.userChoice;
+    if(outcome === 'accepted') remember('installed','1');
+    else $('instFb').textContent = t('inst.declined');
+  }catch(err){
+    console.warn('installeren:', err);
+    $('instFb').textContent = t('inst.declined');
+  }
+  renderInstall();
+}
+
+$('instBtn').onclick   = runInstall;
+$('instBarGo').onclick = runInstall;
+$('instBarNo').onclick = () => { remember('inst.asked','1'); hideInstallBar(); };
+renderInstall();
+
+
+/* ---------- naar beneden vegen om een paneel te sluiten ----------
+ *
+ * Op een telefoon is dat het gebaar dat mensen sowieso proberen. De × blijft
+ * staan: het gebaar is een tweede weg, geen vervanging. Alleen naar beneden,
+ * en alleen als het paneel zelf niet aan het scrollen is — anders sluit het
+ * terwijl je door de tekst leest.
+ */
+function swipeToClose(el, close){
+  if(!el) return;
+  let y0 = null, dy = 0, moved = false;
+
+  const start = e => {
+    const p = e.touches ? e.touches[0] : e;
+    // Zit de vinger in een stuk dat zelf nog naar boven kan scrollen? Dan is
+    // dit een scroll, geen sluitgebaar.
+    const sc = e.target.closest ? e.target.closest('.scroll,.spotlist,.card,.facts') : null;
+    if(sc && sc.scrollTop > 0) return;
+    y0 = p.clientY; dy = 0; moved = false;
+  };
+  const move = e => {
+    if(y0 == null) return;
+    const p = e.touches ? e.touches[0] : e;
+    dy = p.clientY - y0;
+    if(dy < 0){ dy = 0; return; }            // omhoog vegen doet niets
+    if(dy > 6){ moved = true; if(e.cancelable) e.preventDefault(); }
+    el.style.transition = 'none';
+    el.style.transform = `translateY(${dy}px)`;
+  };
+  const end = () => {
+    if(y0 == null) return;
+    el.style.transition = '';
+    el.style.transform = '';
+    const far = dy > Math.min(90, el.offsetHeight * 0.28);
+    y0 = null;
+    if(moved && far) close();
+  };
+
+  el.addEventListener('touchstart', start, {passive:true});
+  el.addEventListener('touchmove',  move,  {passive:false});
+  el.addEventListener('touchend',   end);
+  el.addEventListener('touchcancel',end);
+  // Ook met de muis, zodat het op een laptop te proberen is.
+  el.addEventListener('pointerdown', e => { if(e.pointerType==='mouse' && e.button===0) start(e); });
+  addEventListener('pointermove', e => { if(y0!=null && e.pointerType==='mouse') move(e); });
+  addEventListener('pointerup',   e => { if(y0!=null && e.pointerType==='mouse') end(); });
+}
+
+swipeToClose($('sheet'),     closeSheet);
+swipeToClose($('spotSheet'), () => $('closeSpot').onclick());
+// Het heatmappaneel is een scherm, geen paneel: naar beneden vegen brengt je
+// terug naar de kaart, net als op de kaartknop tikken.
+swipeToClose($('viewHeat'),  () => document.querySelector('#nav button[data-view="map"]').click());
+
 
 /* ================================================================== *
  * Onderbalk en volledige schermen
@@ -2872,8 +3567,6 @@ $('nav').addEventListener('click', e=>{
 /* ================================================================== *
  * Instellingen — alles in localStorage van dít toestel
  * ================================================================== */
-const remember = (k,v) => { try{ localStorage.setItem('diana.'+k, v==null?'':String(v)); }catch{} };
-const recall   = k => { try{ return localStorage.getItem('diana.'+k) || ''; }catch{ return ''; } };
 const GRID_RE = /^[A-R]{2}[0-9]{2}([A-X]{2})?$/i;
 
 const cfg = {
@@ -2888,7 +3581,7 @@ function saveSettings(){
   remember('callp', cfg.callp);
   remember('grid',  cfg.grid);
   remember('view',  cfg.view);
-  remember('lang',  lang);
+  remember('lang',  langPref);      // 'auto' of een taalcode — niet de opgeloste taal
 }
 
 function loadSettingsUI(){
@@ -2896,8 +3589,19 @@ function loadSettingsUI(){
   $('setCallP').value = cfg.callp;
   $('setGrid').value  = cfg.grid;
   [...$('setView').children].forEach(b => b.classList.toggle('on', b.dataset.view2 === cfg.view));
+  [...$('setLang').children].forEach(b => b.classList.toggle('on', b.dataset.lang === langPref));
   checkGrid();
 }
+
+$('setLang').addEventListener('click', e => {
+  const b = e.target.closest('.seg[data-lang]'); if(!b) return;
+  langPref = b.dataset.lang;
+  lang = langPref === 'auto' ? browserLang() : langPref;
+  [...$('setLang').children].forEach(c => c.classList.toggle('on', c === b));
+  [...$('langPick').children].forEach(c => c.classList.toggle('on', c.dataset.lang === lang));
+  saveSettings();
+  applyLang();
+});
 
 function checkGrid(){
   const v = $('setGrid').value.trim().toUpperCase();
@@ -2997,8 +3701,10 @@ function homeView(){
    waarvoor er data ís. Nu is dat België; wordt Diana Europees, dan schuift dit
    vanzelf mee zonder dat er iets aangepast moet worden. */
 function dataBounds(){
-  if(!index || !index.length) return null;
-  return index.reduce((a,z) => [Math.min(a[0],z.bbox[0]), Math.min(a[1],z.bbox[1]),
+  // Punten zonder grens hebben geen bbox — die tellen hier niet mee.
+  const boxed = (index || []).filter(z => z.bbox);
+  if(!boxed.length) return null;
+  return boxed.reduce((a,z) => [Math.min(a[0],z.bbox[0]), Math.min(a[1],z.bbox[1]),
                                 Math.max(a[2],z.bbox[2]), Math.max(a[3],z.bbox[3])],
                       [180,90,-180,-90]);
 }
@@ -3542,7 +4248,7 @@ function renderRules(){
  * ================================================================== */
 const SHEET = '1MFZzdq6xJtpvTtOHfRob6Pvxeo2_5YOQSHjVE0wAyac';
 const sheetURL = tab => `https://docs.google.com/spreadsheets/d/${SHEET}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
-let heat = null, heatLoaded = false, heatOnMap = false;
+let heat = null, heatLoaded = false, heatOnMap = false, heatSource = null;
 
 function parseCSV(text){
   const rows=[]; let row=[], cell='', q=false;
@@ -3582,14 +4288,45 @@ async function loadHeat(){
         if(!e.date || d > e.date) e.date = d;
       }
     });
-    heat = last; heatLoaded = true;
+    if(!Object.keys(last).length) throw new Error('geen rijen uit de sheet');
+    heat = last; heatLoaded = true; heatSource = 'sheet';
     paintHeat();
   }catch(err){
+    // De sheet is van alle bronnen de kwetsbaarste: een gepubliceerd
+    // spreadsheet, geen API. Lukt het niet, dan is er sinds de WWFF-directory
+    // een tweede weg — aantal QSO's en laatste activatie per referentie, mee
+    // gebouwd bij de laatste release. Grover (geen jaren), maar het werkt
+    // offline en zonder derden.
+    const fell = await heatFromActivity();
+    if(fell){ paintHeat(); return; }
     $('heatBox').innerHTML = `<p class="hint" style="color:#b45309">${
       (err instanceof TypeError)
         ? t('heat.cors')
         : t('heat.fail')+' '+err.message}</p>`;
   }
+}
+
+/* Terugval op data/onff-activity.json, gebouwd uit de WWFF-directory. */
+async function heatFromActivity(){
+  try{
+    const doc = await fetchFirst(['./data/onff-activity.json','../data/onff-activity.json']);
+    const out = {};
+    const thisYear = new Date().getFullYear();
+    for(const [ref, a] of Object.entries(doc.refs || {})){
+      if(!a || (!a.q && !a.last)) continue;
+      // De directory bevat een enkele onmogelijke datum (bv. jaar 1059). Die
+      // niet klakkeloos overnemen: hij zou dat gebied als "eeuwig niet
+      // geactiveerd" inkleuren terwijl er gewoon een tikfout in de bron staat.
+      let date = a.last || null;
+      const y = date ? parseInt(date.slice(0,4), 10) : null;
+      if(!y || y < 1990 || y > thisYear + 1) date = null;
+      if(!date && !a.q) continue;
+      out[ref] = {date, qso: a.q || 0, count: a.q ? 1 : 0};
+    }
+    if(!Object.keys(out).length) return false;
+    heat = out; heatLoaded = true; heatSource = 'wwff';
+    return true;
+  }catch{ return false; }
 }
 
 let heatMetric = 'recency';
@@ -3647,7 +4384,8 @@ function paintHeat(){
     <div class="legend"><span>${heatMetric==='recency'?t('heat.long'):t('heat.few')}</span>
       <span class="ramp"></span>
       <span>${heatMetric==='recency'?t('heat.recent'):t('heat.many')}</span></div>
-    ${heatMetric==='qso' ? `<p class="hint">${totalQso.toLocaleString('nl-BE')} ${t('heat.qsototal')}</p>` : ''}`;
+    ${heatMetric==='qso' ? `<p class="hint">${totalQso.toLocaleString(locale())} ${t('heat.qsototal')}</p>` : ''}
+    ${heatSource==='wwff' ? `<p class="hint">${t('heat.viawwff')}</p>` : ''}`;
 
   applyHeatPaint(true);
 
@@ -3755,7 +4493,10 @@ function locate(){
   }, {enableHighAccuracy:true, timeout:12000, maximumAge:5000});
 }
 function evaluate(lat,lon,accuracy){
-  const cand = index.filter(z => lon>=z.bbox[0]-0.02 && lon<=z.bbox[2]+0.02 &&
+  // Alleen echte grenzen doen mee aan "sta ik erin". Een punt zonder polygoon
+  // heeft geen binnenkant — daar kan je die vraag niet over stellen.
+  const cand = index.filter(z => z.bbox &&
+                                 lon>=z.bbox[0]-0.02 && lon<=z.bbox[2]+0.02 &&
                                  lat>=z.bbox[1]-0.02 && lat<=z.bbox[3]+0.02);
   const inside=[];
   for(const z of cand){
@@ -3778,13 +4519,20 @@ function evaluate(lat,lon,accuracy){
   } else {
     let best=null,bd=Infinity;
     for(const z of index){
-      const d=haversine(lat,lon,z.lat??((z.bbox[1]+z.bbox[3])/2),z.lon??((z.bbox[0]+z.bbox[2])/2));
+      const zlat = z.lat ?? (z.bbox ? (z.bbox[1]+z.bbox[3])/2 : null);
+      const zlon = z.lon ?? (z.bbox ? (z.bbox[0]+z.bbox[2])/2 : null);
+      if(zlat==null || zlon==null) continue;
+      const d=haversine(lat,lon,zlat,zlon);
       if(d<bd){bd=d;best=z;}
     }
+    if(!best){ showStatus('out', t('gps.outside'), ''); return; }
+    // Bij een referentie zonder grens is er geen grens om afstand toe te meten;
+    // dan is de afstand tot het punt het eerlijkste antwoord dat we hebben.
     const f = zones.features.find(x=>x.properties.ref===best.ref);
-    const edge = distanceToZone(lat,lon,f);
+    const edge = f ? distanceToZone(lat,lon,f) : bd;
+    const dist = edge>1500 ? (edge/1000).toFixed(1)+' km' : Math.round(edge)+' m';
     showStatus('out', t('gps.outside'),
-      `${t('gps.nearest')}: ${best.ref} ${best.name} — ${edge>1500?(edge/1000).toFixed(1)+' km':Math.round(edge)+' m'}.`);
+      `${t('gps.nearest')}: ${best.ref} ${best.name} — ${dist}${f?'':' ('+t('zone.nopoly')+')'}.`);
   }
 }
 function showStatus(kind,t1,t2){
@@ -3792,6 +4540,9 @@ function showStatus(kind,t1,t2){
   el.className='status show '+kind;
   $('stT1').textContent=t1; $('stT2').textContent=t2;
 }
+/* Elke melding moet weg te klikken zijn — ze staat over de kaart. */
+function hideStatus(){ $('status').className='status'; }
+$('stClose').onclick = hideStatus;
 const marker = new maplibregl.Marker({color:'#1b4332'});
 
 /* eigen locatieknop, onderaan bij de zoomknoppen */
