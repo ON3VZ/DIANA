@@ -104,8 +104,9 @@ with sync_playwright() as p:
     pg2.wait_for_timeout(2000)
     embed_off = pg2.evaluate("() => showWorld")
     ok(embed_off is False, f"showWorld staat uit in een kale embed (kreeg {embed_off})")
-    embed_spots_off = pg2.evaluate("() => showSpots")
-    ok(embed_spots_off is False, f"showSpots staat ook uit in een kale embed (kreeg {embed_spots_off})")
+    # Spots zijn juist de uitzondering: die horen er altijd op, ook in een embed.
+    embed_spots = pg2.evaluate("() => showSpots")
+    ok(embed_spots is True, f"showSpots staat wél aan in een embed (kreeg {embed_spots})")
     pg2.close()
 
     print("\n[8] embed mét ?world=1 zet de laag wél aan")

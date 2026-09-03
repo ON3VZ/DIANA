@@ -93,13 +93,14 @@ the layers button like any other layer.
 Panels at the bottom of the screen — a zone's details, a spot's details, the
 heatmap panel — close by **swiping them down**, as well as with the × button.
 
-The **Spots** map layer is **on by default**: a green pulsing icon for each
-currently active spot and a dashed lighter-orange marker for each
-announced-but-not-yet-active agenda item, plus an arc line from your own
-position (GPS, or your saved locator) to each one, labelled with frequency.
-**⤢ Zoom to all spots** re-frames the map to fit everything currently shown,
-including your own position. Switch it off from the map's layers button, or
-force it on from a URL with `?spots=1`.
+**Spots are always on the map** — there is no switch to lose them behind: a
+green pulsing icon for each currently active spot, with the callsign set larger
+than the frequency underneath it, and an orange-ringed marker for each
+announced-but-not-yet-active agenda item. What *is* switchable is **Lines to the
+spots**, the arcs drawn from your own position to each one: useful for bearing,
+but a spiderweb when there are many. That toggle sits in the layers button and
+your choice is remembered. **⤢ Zoom to all spots** re-frames the map to fit
+everything currently shown, including your own position.
 
 Also on by default: **other WWFF areas**, every active WWFF reference
 worldwide that isn't in Belgium (~64,600 of them), shown as blue clustered
@@ -130,14 +131,15 @@ Sending opens Spotline's own confirmation page in a new tab — your spot goes
 out exactly the way it would if you'd used Spotline directly.
 
 ### Settings (⚙)
-Your callsign, portable callsign (e.g. `ON3VZ/P`), Maidenhead grid locator
-(with "take it from GPS" and format validation), and a home-view preference
-that controls where the map opens: **where you are** (the default — Diana asks
-for your location once and pans there as soon as it arrives; declining costs you
-nothing, it just falls through to the next option), **at your locator**, **at
-your country** (derived from your callsign's prefix), or **the whole dataset**. If neither
-locator nor a recognised prefix is set, the map falls back to fitting all
-currently loaded zones — never a meaningless blank world view.
+Your callsign, portable callsign (e.g. `ON3VZ/P`) and Maidenhead grid locator
+(with "take it from GPS" and format validation). There is deliberately no
+setting for where the map opens — **it always opens where you are**, exactly as if you had
+pressed the ◎ button next to the zoom controls: your position marker appears and
+Diana tells you straight away whether you are standing in a zone. There is no
+setting for this, because there is no sensible other answer for a field app.
+Declining the location permission costs you nothing and produces no complaint:
+the map falls back to your locator, then your callsign's country, then all zones
+— never a blank world view.
 
 This is also where you set your **language** (the seven below, or "follow the
 browser"), your **Spots filter** — worldwide by default, or narrowed to ONFF

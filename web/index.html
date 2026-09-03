@@ -460,7 +460,7 @@
   <div class="opt on" data-layer="onff"><span data-i18n="lay.onff">ONFF-gebieden</span> <span class="sw on"></span></div>
   <div class="opt on" data-layer="labels"><span data-i18n="lay.labels">Referentienummers</span> <span class="sw on"></span></div>
   <div class="opt on" data-layer="nopoly" id="optNopoly" hidden><span data-i18n="lay.nopoly">Zonder grens (punt)</span> <span class="sw on"></span></div>
-  <div class="opt on" data-layer="spots"><span data-i18n="lay.spots">Spots &amp; agenda</span> <span class="sw on"></span></div>
+  <div class="opt on" data-layer="arcs"><span data-i18n="lay.arcs">Lijnen naar de spots</span> <span class="sw on"></span></div>
   <div class="opt on" data-layer="world" id="optWorld" hidden><span data-i18n="lay.world">Andere WWFF-gebieden</span> <span class="sw on"></span></div>
   <div class="opt disabled"><span data-i18n="lay.other">BCA, BLHA…</span> <span class="sw"></span></div>
   <p class="hint" data-i18n="lay.spothint">Spots komen live van WWFF Spotline en verversen elke 30 s.</p>
@@ -581,17 +581,6 @@
       <input id="setGrid" type="text" autocomplete="off" spellcheck="false" placeholder="JO21EE" maxlength="8"></label>
     <div class="fb" id="fbGrid"></div>
     <button class="btn ghost" id="setGridGps" style="font-size:13.5px;padding:10px" data-i18n="set.gridfrom">Uit GPS overnemen</button>
-  </div>
-
-  <div class="card">
-    <h4 style="margin:0 0 10px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
-        data-i18n="set.startview">Startweergave van de kaart</h4>
-    <div class="segs" id="setView">
-      <button class="seg on" data-view2="gps" data-i18n="set.fromgps">Waar je staat</button>
-      <button class="seg" data-view2="grid" data-i18n="set.fromgrid">Bij je locator</button>
-      <button class="seg" data-view2="call" data-i18n="set.fromcall">Bij je land</button>
-      <button class="seg" data-view2="all" data-i18n="set.wholemap">Alles</button>
-    </div>
   </div>
 
   <div class="card">
@@ -788,7 +777,7 @@ const $ = id => document.getElementById(id);
 
 /* Versie van de app zelf. Staat op het startscherm en in Instellingen, zodat een
    melding als "het doet raar" te koppelen is aan een versie. */
-const APP_VERSION = '1.4.2';
+const APP_VERSION = '1.5.0';
 
 /* ---------- startscherm ----------
  * Het duurt even voor 3,7 MB zonedata binnen is en de kaart getekend staat. In
@@ -916,6 +905,7 @@ const STR = {
   "lay.onff": "Natuurgebieden",
   "lay.labels": "Referentienummers",
   "lay.spots": "Spots & agenda",
+  "lay.arcs": "Lijnen naar de spots",
   "lay.world": "Andere WWFF-gebieden",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Taal",
@@ -1164,6 +1154,7 @@ const STR = {
   "lay.onff": "Reference areas",
   "lay.labels": "Reference numbers",
   "lay.spots": "Spots & agenda",
+  "lay.arcs": "Lines to the spots",
   "lay.world": "Other WWFF areas",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Language",
@@ -1412,6 +1403,7 @@ const STR = {
   "lay.onff": "Zones",
   "lay.labels": "Numéros de référence",
   "lay.spots": "Spots et agenda",
+  "lay.arcs": "Lignes vers les spots",
   "lay.world": "Autres zones WWFF",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Langue",
@@ -1660,6 +1652,7 @@ const STR = {
   "lay.onff": "Schutzgebiete",
   "lay.labels": "Referenznummern",
   "lay.spots": "Spots & Agenda",
+  "lay.arcs": "Linien zu den Spots",
   "lay.world": "Andere WWFF-Gebiete",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Sprache",
@@ -1908,6 +1901,7 @@ const STR = {
   "lay.onff": "Områder",
   "lay.labels": "Referencenumre",
   "lay.spots": "Spots & agenda",
+  "lay.arcs": "Linjer til spots",
   "lay.world": "Andre WWFF-områder",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Sprog",
@@ -2156,6 +2150,7 @@ const STR = {
   "lay.onff": "Aree",
   "lay.labels": "Numeri di riferimento",
   "lay.spots": "Spot e agenda",
+  "lay.arcs": "Linee verso gli spot",
   "lay.world": "Altre aree WWFF",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Lingua",
@@ -2404,6 +2399,7 @@ const STR = {
   "lay.onff": "Zonas",
   "lay.labels": "Números de referencia",
   "lay.spots": "Spots y agenda",
+  "lay.arcs": "Líneas hacia los spots",
   "lay.world": "Otras zonas WWFF",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Idioma",
@@ -3059,12 +3055,11 @@ $('langPick').addEventListener('click', e=>{
    blijven beide lagen dus uit tenzij de parameter er expliciet bij staat. */
 function applyEmbed(){
   const q = new URLSearchParams(location.search);
-  if(q.get('embed')==='1'){
-    showSpots = q.get('spots')==='1';
-    showWorld = q.get('world')==='1';
-  }
-  if(q.get('spots')==='1'){ showSpots=true; startSpots();
-    const o=document.querySelector('[data-layer="spots"]'); if(o){o.classList.add('on');o.querySelector('.sw').classList.add('on');} }
+  // Spots staan overal aan, ook in een embed — ?spots=0 is de uitweg voor wie
+  // een kale kaart wil. De wereldpuntenlaag blijft wél opt-in in een embed:
+  // die is groot, en een al gepubliceerde iframe hoort niet ineens 9 MB te halen.
+  if(q.get('spots')==='0') showSpots = false;
+  if(q.get('embed')==='1') showWorld = q.get('world')==='1';
   if(q.get('world')==='1'){ showWorld=true; loadWorldPoints();
     const o=document.querySelector('[data-layer="world"]'); if(o){o.classList.add('on');o.querySelector('.sw').classList.add('on');} }
   if(q.get('ref')) select(q.get('ref').toUpperCase());
@@ -3141,9 +3136,13 @@ function applyVisibility(){
   if(map.getLayer('np-label'))
     map.setLayoutProperty('np-label','visibility',(showZones&&showNoPoly&&showLabels)?'visible':'none');
   const sv = showSpots ? 'visible' : 'none';
-  ['spots-pulse','spots-icon','spots-call','agenda-dot','agenda-label',
-   'spot-arcs-line','agenda-arcs-line']
+  ['spots-pulse','spots-icon','spots-call','agenda-dot','agenda-label']
     .forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',sv); });
+  // De booglijnen naar je eigen QTH zijn los schakelbaar: bij veel spots wordt
+  // het anders een spinnenweb over de kaart.
+  const av = (showSpots && showArcs) ? 'visible' : 'none';
+  ['spot-arcs-line','agenda-arcs-line']
+    .forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',av); });
   const wv = showWorld ? 'visible' : 'none';
   ['world-clusters','world-cluster-count','world-point','world-label']
     .forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',wv); });
@@ -3318,7 +3317,7 @@ $('popLayers').addEventListener('click', e => {
   if(opt.dataset.layer==='onff') showZones = !showZones;
   if(opt.dataset.layer==='labels') showLabels = !showLabels;
   if(opt.dataset.layer==='nopoly') showNoPoly = !showNoPoly;
-  if(opt.dataset.layer==='spots'){ showSpots = !showSpots; if(showSpots){ startSpots(); redrawOverlays(); } }
+  if(opt.dataset.layer==='arcs'){ showArcs = !showArcs; remember('arcs', showArcs ? '1' : '0'); }
   if(opt.dataset.layer==='world'){ showWorld = !showWorld; if(showWorld) loadWorldPoints(); }
   opt.classList.toggle('on');
   opt.querySelector('.sw').classList.toggle('on');
@@ -3340,6 +3339,7 @@ let spots = [], agenda = [], spotsAt = null, spotsError = null;
 // 'all' (wereldwijd), 'onff', of een programmacode zoals 'PAFF' (één land).
 // Wereldwijd is de fabrieksinstelling; wie ooit iets anders koos, krijgt dat
 // terug bij elke volgende start — zie Instellingen → Spots-filter.
+let showArcs = recall('arcs') !== '0';
 let showSpots = true, spotFilter = recall('spotFilter') || 'all', spotTab = 'spots', spotTimer = null, here = null;
 let agendaSkipped = 0;
 
@@ -3540,16 +3540,25 @@ function paintSpots(){
 
     if(map.getStyle().glyphs){
       map.addLayer({ id:'agenda-label', type:'symbol', source:'agenda-pts',
-        layout:{'text-field':['concat',['get','call'],'  ',['get','when']],
-                'text-font':['Noto Sans Regular'],'text-size':10,
-                'text-offset':[0,1.4],'text-anchor':'top'},
-        paint:{'text-color':'#b45309','text-halo-color':'#fff','text-halo-width':1.6}});
+        layout:{'text-field':['format',['get','call'],{'font-scale':1.2},
+                              '\n',{}, ['get','when'],{'font-scale':0.85}],
+                'text-font':['Noto Sans Regular'],'text-size':13,'text-line-height':1.15,
+                'text-offset':[0,1.3],'text-anchor':'top','text-padding':4},
+        paint:{'text-color':'#7c3510','text-halo-color':'#fff','text-halo-width':2.6,
+               'text-halo-blur':0.2}});
       map.addLayer({ id:'spots-call', type:'symbol', source:'spots',
-        layout:{'text-field':['case',['==',['get','khz'],''],['get','call'],
-                              ['concat',['get','call'],'\n',['to-string',['get','khz']],' ',['get','mode']]],
-                'text-font':['Noto Sans Regular'],'text-size':12,'text-line-height':1.1,
-                'text-offset':[0,1.6],'text-anchor':'top','text-allow-overlap':false},
-        paint:{'text-color':'#14532d','text-halo-color':'#fff','text-halo-width':2.2}});
+        // Wie er zit is het antwoord waarvoor je kijkt; frequentie en mode zijn
+        // bijzaak. Vandaar één label met twee maten in plaats van drie regels
+        // even klein grijs.
+        layout:{'text-field':['case',['==',['get','khz'],''],
+                              ['format',['get','call'],{'font-scale':1.25}],
+                              ['format',['get','call'],{'font-scale':1.25},
+                                        '\n',{},
+                                        ['concat',['to-string',['get','khz']],' ',['get','mode']],{'font-scale':0.85}]],
+                'text-font':['Noto Sans Regular'],'text-size':13,'text-line-height':1.15,
+                'text-offset':[0,1.5],'text-anchor':'top','text-allow-overlap':false,'text-padding':4},
+        paint:{'text-color':'#0b3d1f','text-halo-color':'#fff','text-halo-width':2.6,
+               'text-halo-blur':0.2}});
     }
 
     if(!paintSpots._bound){
@@ -3901,12 +3910,6 @@ $('nav').addEventListener('click', e=>{
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   if(b.dataset.view!=='map'){ $(b.dataset.view).classList.add('on'); toggle(null); }
   if(b.dataset.view==='viewSpots'){
-    // Wie naar dit scherm gaat wil de spots ook op de kaart zien.
-    if(!showSpots){
-      showSpots = true;
-      const o=document.querySelector('[data-layer="spots"]');
-      if(o){ o.classList.add('on'); o.querySelector('.sw').classList.add('on'); }
-    }
     startSpots(); renderSpots(); redrawOverlays();
   }
   if(b.dataset.view==='viewHeat'){ loadHeat(); }
@@ -3937,32 +3940,12 @@ const cfg = {
   // Zegt de browser nee, of duurt het te lang, dan schuift homeView() door naar
   // je locator, dan je landprefix, dan het hele gebied — de kaart begint dus
   // nooit op een lege wereldbol.
-  view:  recall('view') || 'gps',
-};
-
-/* Eenmalige overstap naar de nieuwe standaard.
- *
- * Zonder dit zou vrijwel niemand hem ooit zien: saveSettings() schrijft álle
- * instellingen weg, dus wie ooit een taal of roepnaam heeft ingevuld heeft de
- * óude standaard 'grid' al in localStorage staan, en `recall('view') || 'gps'`
- * geeft dan gewoon 'grid' terug.
- *
- * Alleen 'grid' schuift mee, want dát was de oude standaardwaarde — wie
- * bewust 'call' of 'all' koos, houdt zijn keuze. En het gebeurt precies één
- * keer: zet je hem daarna terug op je locator, dan blijft dat zo. */
-if(!recall('view.gpsdefault')){
-  remember('view.gpsdefault', '1');
-  if(!recall('view') || recall('view') === 'grid'){
-    cfg.view = 'gps';
-    remember('view', 'gps');
-  }
 }
 
 function saveSettings(){
   remember('call',  cfg.call);
   remember('callp', cfg.callp);
   remember('grid',  cfg.grid);
-  remember('view',  cfg.view);
   remember('lang',  langPref);      // 'auto' of een taalcode — niet de opgeloste taal
 }
 
@@ -3972,7 +3955,6 @@ function loadSettingsUI(){
   $('setGrid').value  = cfg.grid;
   syncSpotFilterUI();
   syncWorldFilterUI();
-  [...$('setView').children].forEach(b => b.classList.toggle('on', b.dataset.view2 === cfg.view));
   [...$('setLang').children].forEach(b => b.classList.toggle('on', b.dataset.lang === langPref));
   checkGrid();
 }
@@ -4008,12 +3990,6 @@ function checkGrid(){
   checkGrid();
   saveSettings();
 }));
-$('setView').addEventListener('click', e => {
-  const b = e.target.closest('.seg[data-view2]'); if(!b) return;
-  cfg.view = b.dataset.view2;
-  [...$('setView').children].forEach(c => c.classList.toggle('on', c===b));
-  saveSettings();
-});
 $('setGridGps').onclick = () => {
   if(!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(pos => {
@@ -4062,13 +4038,13 @@ const PREFIX_HOME = {
   YL:[24.6,56.9,6.5], ES:[25.5,58.7,6.6], LY:[23.9,55.3,6.6],
 };
 
+/* Waar de kaart staat tót de GPS-positie binnen is. Er valt hier niets meer te
+   kiezen — de kaart opent altijd waar je staat (zie applyHomeView) — maar een
+   GPS-fix duurt seconden en kan geweigerd worden, en tot dan is dit beter dan
+   een lege wereldbol: je locator, anders je landprefix, anders alle gebieden. */
 function homeView(){
-  if(cfg.view === 'all') return null;
-  // 'gps' heeft nog geen positie op het moment dat de kaart opent — die komt
-  // asynchroon binnen (zie applyHomeView). Tot dan geldt dezelfde keten als
-  // altijd, zodat er meteen iets zinnigs staat in plaats van een lege bol.
-  if(cfg.view === 'gps' && here) return {center:[here.lon, here.lat], zoom:12};
-  if(cfg.view === 'grid' || cfg.view === 'gps'){
+  if(here) return {center:[here.lon, here.lat], zoom:12};
+  {
     const ll = gridToLatLon(cfg.grid);
     if(ll) return {center:ll, zoom:10};
   }
@@ -4098,33 +4074,19 @@ function dataBounds(){
 }
 
 function applyHomeView(){
+  // Eerst iets zinnigs neerzetten, zodat er nooit een lege wereldbol staat te
+  // wachten op een GPS-fix.
   const v = homeView();
   if(v) map.jumpTo(v);
   else {
     const b = dataBounds();
     if(b) map.fitBounds([[b[0],b[1]],[b[2],b[3]]], {padding:30, duration:0});
   }
-  if(cfg.view === 'gps') centreOnGps();
-}
-
-/* "Waar sta ik" als startweergave. Bewust ná de eerste weergave: de kaart staat
-   dan al ergens zinnigs, en zodra de positie binnen is schuift hij erheen. Zo
-   wacht niemand op een GPS-fix, en blijft een geweigerde toestemming zonder
-   gevolgen. Verschuift de gebruiker de kaart intussen zelf, dan laten we hem met
-   rust — een kaart die onder je vingers wegspringt is erger dan een verkeerd
-   beginpunt. */
-let homeGpsDone = false;
-function centreOnGps(){
-  if(homeGpsDone || !navigator.geolocation) return;
-  homeGpsDone = true;
-  let moved = false;
-  const onMove = e => { if(e && e.originalEvent) moved = true; };
-  map.once('dragstart', onMove);
-  map.once('zoomstart', onMove);
-  navigator.geolocation.getCurrentPosition(pos => {
-    if(moved) return;
-    map.easeTo({center:[pos.coords.longitude, pos.coords.latitude], zoom:12, duration:800});
-  }, () => {}, {enableHighAccuracy:false, timeout:8000, maximumAge:300000});
+  // En dan hetzelfde doen als de ◎-knop: positie bepalen, marker zetten,
+  // erheen schuiven en nakijken of je in een gebied staat. Stil, want dit is
+  // niet gevraagd door een tik op de knop: geen "locatie zoeken…"-paneel bij
+  // het opstarten, en een geweigerde toestemming blijft zonder melding.
+  locate(true);
 }
 
 
@@ -4891,9 +4853,12 @@ function distanceToZone(lat,lon,f){
     }
   return best;
 }
-function locate(){
-  if(!navigator.geolocation){ showStatus('out', t('gps.none'), t('gps.nonesub')); return; }
-  showStatus('out', t('gps.searching'), '');
+function locate(quiet){
+  // quiet: aangeroepen bij het opstarten in plaats van door een tik op ◎.
+  // Dan geen zoekmelding en geen foutmelding — wie geen locatie deelt hoort
+  // gewoon een kaart te zien, geen klacht.
+  if(!navigator.geolocation){ if(!quiet) showStatus('out', t('gps.none'), t('gps.nonesub')); return; }
+  if(!quiet) showStatus('out', t('gps.searching'), '');
   navigator.geolocation.getCurrentPosition(pos=>{
     const {latitude:lat, longitude:lon, accuracy} = pos.coords;
     here = {lat, lon};
@@ -4902,7 +4867,7 @@ function locate(){
     evaluate(lat,lon,accuracy);
     renderSpots();
   }, err=>{
-    showStatus('out', t('gps.failed'), err.message);
+    if(!quiet) showStatus('out', t('gps.failed'), err.message);
   }, {enableHighAccuracy:true, timeout:12000, maximumAge:5000});
 }
 function evaluate(lat,lon,accuracy){
@@ -4963,7 +4928,7 @@ class LocateControl{
   onAdd(){ const d=document.createElement('div');
     d.className='maplibregl-ctrl maplibregl-ctrl-group';
     d.innerHTML='<button type="button" title="Waar sta ik?" style="font-size:15px">◎</button>';
-    d.onclick=locate; return d; }
+    d.onclick=()=>locate(); return d; }
   onRemove(){}
 }
 map.addControl(new LocateControl(),'bottom-right');
