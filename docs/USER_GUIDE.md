@@ -131,8 +131,10 @@ out exactly the way it would if you'd used Spotline directly.
 ### Settings (⚙)
 Your callsign, portable callsign (e.g. `ON3VZ/P`), Maidenhead grid locator
 (with "take it from GPS" and format validation), and a home-view preference
-that controls where the map opens: **at your locator**, **at your country**
-(derived from your callsign's prefix), or **the whole dataset**. If neither
+that controls where the map opens: **where you are** (the default — Diana asks
+for your location once and pans there as soon as it arrives; declining costs you
+nothing, it just falls through to the next option), **at your locator**, **at
+your country** (derived from your callsign's prefix), or **the whole dataset**. If neither
 locator nor a recognised prefix is set, the map falls back to fitting all
 currently loaded zones — never a meaningless blank world view.
 

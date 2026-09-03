@@ -328,6 +328,46 @@ BE_LAT = (49.0, 52.0)
 BE_LON = (2.0, 7.0)
 
 
+MOJIBAKE_HINTS = ("Ã", "â€", "Â", "Å", "Ð")
+
+
+def _demojibake(text: str) -> str:
+    """Repair text that was UTF-8, got read as Windows-1252, and re-saved as UTF-8.
+
+    De WWFF-directory levert zo'n 437 namen dubbel gecodeerd aan: "Vallée de
+    l'Ecaillon" komt binnen als "VallÃ©e de lâ€™Ecaillon". Dat is geen leesfout
+    aan onze kant — die tekens staan echt zo in het bestand — maar we tonen het
+    wel, dus repareren we het hier, op één plek, voor élk veld.
+
+    De omkering is alleen geldig als ze precies uitkomt: lukt de terugweg niet,
+    of levert ze geen geldige UTF-8 op, dan was de tekst al goed (Portugees
+    "Âncora", Spaans "Ávila") en laten we hem met rust.
+    """
+    if not text or not any(hint in text for hint in MOJIBAKE_HINTS):
+        return text
+
+    # Per aaneengesloten stuk niet-ASCII, niet over de hele tekst in één keer.
+    # De directory levert namelijk ook hálf verminkte namen: in "Vallée de
+    # lâ€™EscriÃ¨re" is de eerste é al goed en de rest niet. Over de hele
+    # string mislukt de terugweg dan op die goede é, en blijft alles staan.
+    def repair(match: re.Match) -> str:
+        run = match.group(0)
+        raw = bytearray()
+        for ch in run:
+            try:
+                raw += ch.encode("cp1252")
+            except UnicodeEncodeError:
+                if ord(ch) > 0xFF:              # kan nooit uit één byte komen
+                    return run
+                raw.append(ord(ch))             # cp1252 kent 0x81/0x8D/0x9D niet
+        try:
+            return raw.decode("utf-8")
+        except UnicodeDecodeError:
+            return run                          # was al goed (Portugees "Âncora")
+
+    return re.sub(r"[^\x00-\x7f]+", repair, text)
+
+
 def _read_rows(source: str, timeout: int = 120) -> list[dict[str, str]]:
     """Read a CSV from a local path or a URL into a list of dicts."""
     import csv
@@ -370,7 +410,7 @@ def _read_rows(source: str, timeout: int = 120) -> list[dict[str, str]]:
     for row in rows[header_at + 1:]:
         if not any((c or "").strip() for c in row):
             continue
-        out.append({header[i] if i < len(header) else f"col{i}": (row[i] or "").strip()
+        out.append({header[i] if i < len(header) else f"col{i}": _demojibake((row[i] or "").strip())
                     for i in range(len(row))})
     return out
 
@@ -406,11 +446,24 @@ def _row_value(row: dict[str, str], *words: str) -> str | None:
 # uit, vóór de omrekening, anders glipt hij door de nulcontrole heen.
 NULL_LOCATOR = {"JJ00AA", "JJ00", "AA00AA", "AA00"}
 
+# Ondergrens voor "dit is echt de WWFF-directory". De echte lijst heeft er zo'n
+# 68.000; een afgebroken download raakt daar niet eens in de buurt.
+MIN_DIRECTORY_ROWS = 5000
+
+# Hoe een WWFF-referentie eruitziet, wereldwijd: een programmacode die zelf al op
+# "FF" eindigt, een streepje, een nummer. Streng genoeg om de stray kopregel in
+# de export ("REFERENCE") buiten te houden.
+WORLD_REF_RE = re.compile(r"^[A-Z0-9]{1,5}FF-\d+$")
+
 
 def locator_to_latlon(loc: str) -> tuple[float, float] | None:
     """Maidenhead locator to the centre of its square. The directory always has
     one, so it is the backstop when latitude/longitude are empty."""
-    loc = (loc or "").strip().upper()
+    # De directory bevat locators met rommel eromheen ("-GJ01PN", "IO91GN-",
+    # "IO75 HT") en een handvol verlengde locators van 8 tekens. Die zijn
+    # allemaal bruikbaar zodra je de niet-alfanumerieke tekens weghaalt en op
+    # zes tekens afkapt — weggooien zou de backstop onnodig broos maken.
+    loc = re.sub(r"[^A-Za-z0-9]", "", loc or "").upper()[:6]
     if loc in NULL_LOCATOR:
         return None
     if not re.fullmatch(r"[A-R]{2}[0-9]{2}([A-X]{2})?", loc):
@@ -442,11 +495,23 @@ def _row_latlon(row: dict[str, str]) -> tuple[float, float] | None:
                 lat = _to_float(value)
             elif lon is None and ("lon" in k or "lng" in k):
                 lon = _to_float(value)
-    if lat is not None and lon is not None and not (abs(lat) < 0.1 and abs(lon) < 0.1):
-        return lat, lon
+    # Drie manieren waarop de directory een onbruikbare coördinaat aanlevert, en
+    # ze glippen alle drie door een naïeve controle heen:
+    #   · buiten bereik    — breedte −1000, lengte −787 (een verminkte export)
+    #   · omgewisseld      — breedte 144, lengte −36 (lat/lon verwisseld)
+    #   · half nul-eiland  — één van de twee exact 0, de andere echt
+    # In alle drie de gevallen vallen we door naar de locator, die het bijna
+    # altijd wél goed heeft. Let op de 'or' in de nulcontrole: met 'and' glipt
+    # een half genulde coördinaat erdoor, en die zet een Noord-Iers gebied
+    # 500 km de Noordzee in.
+    if lat is not None and lon is not None:
+        if abs(lat) > 90 and abs(lon) <= 90:
+            lat, lon = lon, lat                          # duidelijk verwisseld
+        if abs(lat) <= 90 and abs(lon) <= 180 and not (abs(lat) < 0.1 or abs(lon) < 0.1):
+            return lat, lon
 
     ll = locator_to_latlon(row.get("iaruLocator") or _row_value(row, "locator", "grid") or "")
-    if ll and not (abs(ll[0]) < 0.1 and abs(ll[1]) < 0.1):
+    if ll and not (abs(ll[0]) < 0.1 or abs(ll[1]) < 0.1):
         return ll
 
     for key, value in row.items():
@@ -474,14 +539,27 @@ def point_refs(source: str | None, programs: list[str], have: set[str],
     data build — it degrades to "manual points from overrides.json only".
     """
     warnings: list[str] = []
-    stats = {"listed": 0, "deleted": 0, "orphan_polygons": [], "renamed": []}
+    stats = {"listed": 0, "deleted": 0, "nonwwff": 0, "orphan_polygons": [], "renamed": []}
     rows: list[dict[str, str]] = []
+    read_failed = False
     if source:
         try:
             rows = _read_rows(source)
         except Exception as exc:                      # noqa: BLE001 — any failure is non-fatal
             warnings.append(f"WWFF-directory niet gelezen ({type(exc).__name__}): "
                             f"alleen handmatige punten uit overrides.json gebruikt")
+            read_failed = True
+        else:
+            # Een afgebroken download levert géén foutmelding op: je krijgt gewoon
+            # minder rijen. Zonder deze controle schrijven we dan een half bestand
+            # weg dat er kerngezond uitziet. De echte directory heeft er ~68.000;
+            # alles onder een paar duizend is nooit de echte lijst.
+            if len(rows) < MIN_DIRECTORY_ROWS:
+                warnings.append(f"WWFF-directory lijkt onvolledig: {len(rows)} rijen gelezen, "
+                                f"minstens {MIN_DIRECTORY_ROWS} verwacht — genegeerd")
+                rows = []
+                read_failed = True
+    stats["rows"] = len(rows)
 
     wanted = tuple(p.strip().upper() for p in programs if p.strip())
     listed: dict[str, dict] = {}
@@ -506,14 +584,23 @@ def point_refs(source: str | None, programs: list[str], have: set[str],
     for row in rows:
         ref = (row.get("reference") or _row_value(row, "ref", "onff", "nummer") or "").strip().upper()
         if not ref:
-            m = REF_RE.search(" ".join(row.values()))
+            # Alleen de eerste cellen aftasten. Over de hele rij zoeken betekent
+            # ook in 'notes' en 'changeLog' zoeken, en een rij van een ánder land
+            # die toevallig een ONFF-nummer noemt zou dan als ONFF-gebied
+            # binnenkomen.
+            head = " ".join(list(row.values())[:4])
+            m = REF_RE.search(head)
             ref = f"ONFF-{m.group(1)}" if m else ""
         if not ref or (wanted and not ref.startswith(wanted)):
             continue
 
         status = (row.get("status") or "active").strip().lower()
         if status and status != "active":
-            stats["deleted"] += 1
+            # 'deleted' is echt geschrapt; 'national' is een bestaand gebied dat
+            # (nog) niet als WWFF-referentie meetelt. Allebei tekenen we niet,
+            # maar ze op één hoop gooien laat het rapport beweren dat er gebieden
+            # geschrapt zijn die dat niet zijn.
+            stats["deleted" if status == "deleted" else "nonwwff"] += 1
             # Een geschrapte referentie die wij nog wél tekenen is een echt signaal.
             if ref in have:
                 warnings.append(f"{ref} staat als '{status}' in de WWFF-directory maar heeft nog "
@@ -596,6 +683,7 @@ def point_refs(source: str | None, programs: list[str], have: set[str],
                         + ("…" if len(stats["orphan_polygons"]) > 12 else ""))
     programs_map = {prog: counter.most_common(1)[0][0]
                     for prog, counter in programs_seen.items() if counter}
+    stats["read_failed"] = read_failed
 
     # Elke actieve referentie buiten --program, als kaal punt: geen naam-per-land,
     # geen provincie, geen IUCN — enkel wat nodig is om een stip te zetten, want
@@ -607,7 +695,13 @@ def point_refs(source: str | None, programs: list[str], have: set[str],
         ref = (row.get("reference") or "").strip().upper()
         if not ref or (wanted and ref.startswith(wanted)):
             continue
-        status = (row.get("status") or "active").strip().lower()
+        # Dezelfde stray kopregel als hierboven levert ref "REFERENCE" met een
+        # lege status. Een lege status hier als 'active' lezen zou die regel als
+        # gebied op de kaart zetten; vandaar geen standaardwaarde, en dezelfde
+        # vormtest als bij de programmatabel.
+        if not WORLD_REF_RE.match(ref):
+            continue
+        status = (row.get("status") or "").strip().lower()
         if status != "active":
             continue
         latlon = _row_latlon(row)
@@ -828,7 +922,8 @@ def diff_report(new_index: dict, prev_path: Path, stats: dict, source_name: str)
                      f"**{len(new_by_ref)} met een grens** uit het KMZ · "
                      f"**{placed} als punt** op de kaart"
                      + (f" · **{unplaced} zonder positie**" if unplaced else "")
-                     + (f" · {d.get('deleted', 0)} geschrapt (niet getoond)" if d.get("deleted") else ""))
+                     + (f" · {d.get('deleted', 0)} geschrapt (niet getoond)" if d.get("deleted") else "")
+                     + (f" · {d.get('nonwwff', 0)} niet-WWFF (niet getoond)" if d.get("nonwwff") else ""))
         lines.append("")
         lines.append("Elke referentie komt maar één keer voor: staat er een polygoon in het KMZ, "
                      "dan wint die en wordt de directoryrij alleen gebruikt om te controleren.")
@@ -874,6 +969,10 @@ def main() -> int:
                              "(default ONFF; e.g. 'ONFF,PAFF,DLFF' for a wider map)")
     parser.add_argument("--no-refs", action="store_true",
                         help="skip the directory entirely (offline builds)")
+    parser.add_argument("--strict", action="store_true",
+                        help="stop met exitcode 1 als de WWFF-directory onbereikbaar of "
+                             "onvolledig is, in plaats van door te gaan met minder data. "
+                             "Voor onbewaakte runs die zelf mogen committen.")
     args = parser.parse_args()
 
     if not args.kmz.exists():
@@ -896,15 +995,64 @@ def main() -> int:
     pt_features, pt_entries, activity, pt_warnings, pt_stats, programs_map, world_features = point_refs(
         None if args.no_refs else args.refs_csv, programs, have, overrides, args.decimals)
     stats["warnings"].extend(pt_warnings)
+
+    args.out.mkdir(parents=True, exist_ok=True)
+    index_path = args.out / "onff-index.json"
+
+    # De directory is de kwetsbaarste van de drie bronnen: één 503 en we hebben
+    # geen enkel punt meer. Dat is geen reden om de vorige build weg te gooien.
+    #
+    # In --strict (de nachtelijke run, waar niemand meekijkt) stoppen we hier
+    # gewoon: niets geschreven is altijd beter dan stilletjes uitgeklede data
+    # doorduwen naar main. Zonder --strict kijkt er wél iemand naar een pull
+    # request, en houden we de punten van de vorige build aan in plaats van ze
+    # te wissen — anders schrijft een bereikbaarheidsprobleem zich in als een
+    # datawijziging.
+    directory_failed = bool(pt_stats.get("read_failed"))
+
+    # Een afgebroken download geeft géén foutmelding — je krijgt gewoon minder
+    # rijen, en een vaste ondergrens vangt dat slecht: 20% van het bestand zijn
+    # nog altijd 14.000 rijen. Daarom ijken we tegen de vórige build: zakt het
+    # aantal rijen fors, dan is er iets mis met de bron, niet met WWFF.
+    meta_path = args.out / "meta.json"
+    previous_rows = 0
+    if meta_path.exists():
+        try:
+            previous_rows = int(json.loads(meta_path.read_text(encoding="utf-8")).get("directory_rows") or 0)
+        except Exception:                              # noqa: BLE001 — corrupt is just "no previous"
+            previous_rows = 0
+    rows_now = pt_stats.get("rows") or 0
+    if not directory_failed and previous_rows and rows_now < previous_rows * 0.8:
+        directory_failed = True
+        stats["warnings"].append(
+            f"WWFF-directory lijkt afgebroken: {rows_now} rijen tegenover {previous_rows} "
+            f"de vorige build (−{100 - round(rows_now / previous_rows * 100)}%) — genegeerd")
+
+    if directory_failed:
+        if args.strict:
+            print("✗ WWFF-directory onbereikbaar of onvolledig — niets geschreven (--strict)",
+                  file=sys.stderr)
+            for warning in pt_warnings + stats["warnings"][-1:]:
+                print("  " + warning, file=sys.stderr)
+            return 1
+        previous = {}
+        if index_path.exists():
+            try:
+                previous = json.loads(index_path.read_text(encoding="utf-8"))
+            except Exception:                          # noqa: BLE001 — corrupt is just "no previous"
+                previous = {}
+        if previous.get("points"):
+            pt_entries = previous["points"]
+            stats["warnings"].append(
+                f"directory onbereikbaar — de {len(pt_entries)} punten van de vorige build "
+                f"blijven staan; onff-points.geojson is niet herschreven")
+
     stats["points"] = len(pt_features)
     stats["points_unplaced"] = sum(1 for e in pt_entries if not e.get("placed"))
     stats["directory"] = pt_stats
     stats["activity"] = len(activity)
     index_doc["points"] = pt_entries
-    index_doc["point_count"] = len(pt_features)
-
-    args.out.mkdir(parents=True, exist_ok=True)
-    index_path = args.out / "onff-index.json"
+    index_doc["point_count"] = len(pt_entries)
 
     print("→ writing diff report", file=sys.stderr)
     report = diff_report(index_doc, index_path, stats, args.kmz.name)
@@ -918,17 +1066,20 @@ def main() -> int:
             fh.write(geojson_path.read_bytes())
     index_path.write_text(json.dumps(index_doc, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
 
-    # Written even when empty, so the app's fetch is a clean 200 rather than a 404.
-    (args.out / "onff-points.geojson").write_text(
-        json.dumps({"type": "FeatureCollection",
-                    "generated": index_doc["generated"],
-                    "features": pt_features}, separators=(",", ":"), ensure_ascii=False),
-        encoding="utf-8")
+    # Written even when empty, so the app's fetch is a clean 200 rather than a 404
+    # — maar níét als de directory onbereikbaar was: dan is "leeg" geen uitkomst
+    # maar een storing, en overschrijven we een goed bestand met een leeg.
+    if not directory_failed:
+        (args.out / "onff-points.geojson").write_text(
+            json.dumps({"type": "FeatureCollection",
+                        "generated": index_doc["generated"],
+                        "features": pt_features}, separators=(",", ":"), ensure_ascii=False),
+            encoding="utf-8")
 
     # Activiteit per referentie uit de WWFF-directory: aantal QSO's en de datum van
     # de laatste activatie. Klein bestand, en het laat de heatmap werken zonder de
     # Google-sheet — die is van de drie bronnen veruit de kwetsbaarste.
-    if activity:
+    if activity and not directory_failed:
         (args.out / "onff-activity.json").write_text(
             json.dumps({"generated": index_doc["generated"],
                         "source": "wwff_directory.csv",
@@ -937,7 +1088,7 @@ def main() -> int:
     # Wereldwijde programma → land-lijst, voor het spots-filter in de app
     # (Instellingen: alleen ONFF / één specifiek land / wereldwijd). Los van
     # --program: die beperkt alleen wélke referenties de kaart zelf tekent.
-    if programs_map:
+    if programs_map and not directory_failed:
         (args.out / "wwff-programs.json").write_text(
             json.dumps({"generated": index_doc["generated"],
                         "programs": [{"program": p, "country": c}
@@ -949,7 +1100,7 @@ def main() -> int:
     # als kaal punt. Alleen geschreven als de directory echt gelezen kon worden
     # (anders zou dit een leeg of enorm-verouderd bestand overschrijven met iets
     # dat er nog leger uitziet); anders blijft de vorige versie gewoon staan.
-    if world_features:
+    if world_features and not directory_failed:
         (args.out / "wwff-world.geojson").write_text(
             json.dumps({"type": "FeatureCollection",
                         "generated": index_doc["generated"],
@@ -963,6 +1114,10 @@ def main() -> int:
         "zones": stats["zones"],
         "directory_listed": pt_stats.get("listed"),
         "directory_deleted": pt_stats.get("deleted"),
+        # Het totale aantal gelezen rijen — de ijkwaarde waartegen de vólgende
+        # build merkt dat de directory afgebroken binnenkwam.
+        "directory_rows": pt_stats.get("rows"),
+        "directory_nonwwff": pt_stats.get("nonwwff"),
         "points_no_polygon": stats["points"],
         "points_unplaced": stats["points_unplaced"],
         "activity_refs": len(activity),

@@ -73,14 +73,16 @@ To also regenerate the data locally, see §4.
 | Trigger | What happens |
 |---|---|
 | Pull request touching `source/**.kmz`, `overrides.json`, or `build/**` | Runs `kmz2geojson.py`, commits the regenerated `data/*.json` to the PR branch, and posts (or updates) one PR comment with a diff report |
-| `schedule` — every night at **01:00 UTC** | Runs the same conversion against the newest KMZ already in `source/`, so the only thing that can actually change is whatever the WWFF directory itself changed since yesterday (new/renamed/retired references, updated QSO counts) — never a boundary, since those only come from a KMZ. A dedicated **"Uitvoer controleren"** step first checks that `onff.geojson`, `onff-index.json`, and `meta.json` all exist and are non-empty; only past that check, and only if `data/` actually changed, does it commit — **directly to `main`**, no pull request. If the check fails (directory unreachable and no usable fallback, or any other build error), nothing is committed, and a **"Melding maken bij een mislukte nachtelijke build"** step opens a GitHub issue (or comments on the existing one) labelled `diana-nachtelijke-build` instead |
+| `schedule` — every night at **01:00 UTC** | Runs the same conversion against the newest KMZ already in `source/`, so the only thing that can actually change is whatever the WWFF directory itself changed since yesterday (new/renamed/retired references, updated QSO counts) — never a boundary, since those only come from a KMZ. The script runs with `--strict`, so an unreachable **or truncated** directory aborts the build instead of degrading; a **"Uitvoer controleren"** step then re-checks the *content* (zone count, and how many directory references were actually read) rather than merely whether the files are non-empty. Only past both does it commit — **directly to `main`**, no pull request — bumping the last digit of `APP_VERSION` in the same commit, and retrying the push up to three times with a rebase if `main` moved meanwhile. On failure, cancellation, or a run skipped for a missing KMZ, a **"Melding maken bij een mislukte nachtelijke build"** step opens a GitHub issue (or comments on the existing one) labelled `diana-nachtelijke-build` |
 | `workflow_dispatch` | Same conversion, run on demand from the Actions tab |
 
 The nightly run is what makes brand-new WWFF references (and status/QSO
 changes) show up without anyone touching the repository, and — unlike a KMZ
 upload — it is allowed to publish by itself, since the worst it can do is
 place or rename a reference, never draw a wrong boundary. A failed night
-raises a GitHub issue rather than failing silently; see
+raises a GitHub issue rather than failing silently — as does a night that
+quietly did nothing at all, because "no KMZ in `source/`" would otherwise look
+identical to "nothing to refresh" forever. See
 [ADMIN.md §3](ADMIN.md#3-where-the-data-comes-from--and-what-you-actually-have-to-do)
 for what that looks like and how GitHub's own notifications get it to you.
 
@@ -107,6 +109,7 @@ merging a new KMZ is a leap of faith.
 | push to `main`/`master` | `build/site.sh` output replaces the live site at the repo root of the `gh-pages` branch |
 | pull request opened/updated | published to `.../preview/pr-<number>/`, with the link posted as a PR comment |
 | pull request closed | that preview folder is deleted |
+| `workflow_run` after `build-data.yml` succeeds | publishes whatever that run committed. **This trigger is load-bearing:** a push made with the default `GITHUB_TOKEN` does not start new workflows, so without it the nightly data commit would land on `main` and never be published, and a PR preview would show the dataset from *before* the build |
 | `workflow_dispatch` | same as a push — mainly useful to bootstrap `gh-pages` the very first time, before it exists |
 
 Requires **Settings → Actions → General → Workflow permissions → "Read and
@@ -162,6 +165,7 @@ Takes roughly half a minute for the full Belgian dataset.
 | `--refs-csv` | `https://wwff.co/wwff-data/wwff_directory.csv` | the WWFF directory (URL **or** local path) — the list of which references exist |
 | `--program` | `ONFF` | comma-separated reference prefixes to keep from the directory, e.g. `ONFF,PAFF,DLFF` for a wider map |
 | `--no-refs` | off | skip the directory entirely — for builds with no network |
+| `--strict` | off | exit non-zero if the directory is unreachable **or looks truncated** (fewer rows than expected, or a sharp drop against the previous build) instead of continuing with less data. The nightly run uses this: nothing written beats bad data committed unattended |
 
 The directory is fetched fresh on every build — it is regenerated daily, so
 pinning a copy would go stale. Reading is deliberately tolerant: columns are

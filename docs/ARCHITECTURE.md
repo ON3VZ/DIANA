@@ -43,7 +43,7 @@ it does not introduce a new data source.
 |---|---|---|---|
 | `data/onff.geojson` | 3.7 MB (≈1 MB gzipped) | the map, on load | one `MultiPolygon` per ONFF reference, with name, province, area, and whatever attributes the source KMZ provided |
 | `data/onff-points.geojson` | small | the map, on load (optional — a missing file is not an error) | one `Point` per reference that exists on the ONFF list but has **no boundary** in the KMZ |
-| `data/onff-activity.json` | 39 kB | the Heatmap, as a fallback | QSO count and last-activation date per reference, taken from the WWFF directory |
+| `data/onff-activity.json` | 39 kB | the zone detail panel (on load) and the Heatmap (as a fallback) | QSO count and last-activation date per reference, taken from the WWFF directory |
 | `data/wwff-programs.json` | 7.5 kB | the Spots screen and Settings, to fill the "one specific country" list | every WWFF programme in the directory (worldwide) mapped to its country — has nothing to do with which zones the map draws |
 | `data/wwff-world.geojson` | 9.4 MB (≈1.4 MB gzipped) | the map, on load (optional — a missing file just leaves the layer empty) | one `Point` per **active, non-ONFF** WWFF reference worldwide (~64,700 of them), with only `ref` and `name` — never a boundary, for the same reason `onff-points.geojson` never invents one |
 | `data/onff-index.json` | 210 kB | **not loaded by the app** — it exists for tooling, reports and anything built alongside Diana | the zone list **without geometry**: reference, name, province, area, centroid, bounding box, plus a `points` array covering the boundary-less references (including those with no known coordinate, which therefore appear in no other file) |
@@ -133,6 +133,12 @@ is invented). At ~64,700 features this is by far the largest file Diana
 ships, so the map only loads it when the "other WWFF areas" layer is actually
 on (on by default — see §2.1.3) and renders it clustered rather than as
 64,700 individual markers.
+
+A third repair happens on the way in: about 437 names arrive **double-encoded**
+("Vallée de l'Ecaillon" as "VallÃ©e de lâ€™Ecaillon"), sometimes only partly, in
+a row whose other accents are fine. The build repairs each run of non-ASCII
+characters separately and keeps the original whenever the reversal does not come
+out cleanly, so genuinely correct text (Portuguese "Âncora", "São") is left alone.
 
 Two data traps the build guards against, both real: the directory marks "position
 unknown" as latitude/longitude `0,0` *and* locator `JJ00AA` (which converts to

@@ -17,6 +17,8 @@ python3 build/tests/test_new.py      # enz.
 | `test_final.py` | dat de installatiebalk wijkt voor een open paneel |
 | `test_splash.py` | startscherm, versienummer, de 16 punten, en of de onderbalk uitgelijnd staat |
 | `test_heat.py` | heatmap uit de sheet én de terugval op de WWFF-directory |
+| `test_worldpoints.py` | wereldwijde WWFF-gebieden: standaard aan, clustering, filteren op één land, laag uit/aan, en dat een embed hem uit laat tenzij `?world=1` |
+| `test_directory.py` | de bouwstap zelf (geen browser): onmogelijke coördinaten, lekken tussen de lagen, en of `--strict` bij een onbereikbare of afgebroken directory écht niets overschrijft |
 | `test_spotsfilter.py` | spots-filter: standaard wereldwijd, ONFF-only, één land via `wwff-programs.json`, en dat het snelle filter en Instellingen gesynchroniseerd blijven en de herlaadbeurt overleven |
 
 De stijlwisseltest in `test_swipe.py` is de belangrijkste: daar zat de bug waarbij
