@@ -21,8 +21,10 @@ const SHELL_FILES = [
   './vendor/maplibre-gl.js', './vendor/maplibre-gl.css',
   './data/onff.geojson', './data/onff-index.json', './data/meta.json',
   './data/onff-points.geojson', './data/onff-activity.json', './data/wwff-programs.json',
+  './data/wwff-world.geojson',
   '../data/onff.geojson', '../data/onff-index.json', '../data/meta.json',
   '../data/onff-points.geojson', '../data/onff-activity.json', '../data/wwff-programs.json',
+  '../data/wwff-world.geojson',
 ];
 
 self.addEventListener('install', e => {
