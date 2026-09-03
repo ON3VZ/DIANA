@@ -14,7 +14,7 @@ cp -r web/. "$OUT/"
 cp data/onff.geojson data/onff-index.json data/meta.json "$OUT/data/"
 # Uit de WWFF-directory, dus pas aanwezig na een build die hem kon ophalen.
 # (Als 'if', niet als '[ … ] && cp' — met set -e stopt het script daar anders op.)
-for extra in data/onff-points.geojson data/onff-activity.json; do
+for extra in data/onff-points.geojson data/onff-activity.json data/wwff-programs.json; do
   if [ -f "$extra" ]; then
     cp "$extra" "$OUT/data/"
   fi

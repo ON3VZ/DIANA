@@ -11,6 +11,9 @@ static data files the Diana PWA loads:
     data/onff-points.geojson references that exist on the ONFF list but have no
                             polygon in the KMZ, as single Point features
     data/meta.json          provenance: which source file, which release, what settings
+    data/wwff-programs.json every WWFF programme in the directory mapped to its country
+                            (worldwide, not just ONFF) — lets the app's spots screen offer
+                            a "just this country" filter without shipping a hand-kept list
 
 It also writes a human-readable diff report against the previous index, which the
 GitHub Action posts under the pull request and the /admin page renders in plain
@@ -482,6 +485,21 @@ def point_refs(source: str | None, programs: list[str], have: set[str],
     activity: dict[str, dict] = {}
     seen: set[str] = set()          # élke actieve referentie uit de directory
 
+    # Programma → land, over de VOLLEDIGE directory (niet beperkt tot --program):
+    # de kaart zelf blijft ONFF-only, maar de spots-app wil wereldwijd op land
+    # kunnen filteren, en heeft daarvoor een naam per WWFF-programma nodig. Eén
+    # tel per land per programma; het vaakst voorkomende land wint (bijna altijd
+    # is dat het enige, op wat schrijfvarianten na).
+    programs_seen: dict[str, Counter] = {}
+    program_code_re = re.compile(r"^[A-Z0-9]{1,5}FF$")
+    for row in rows:
+        prog = (row.get("program") or "").strip().upper()
+        country = (row.get("country") or "").strip()
+        # Een enkele stray kopregel her en der in de export levert "PROGRAM"/
+        # "country" als waarden op; een echt programma eindigt altijd op "FF".
+        if program_code_re.match(prog) and country and country not in ("-", "n/a"):
+            programs_seen.setdefault(prog, Counter())[country] += 1
+
     for row in rows:
         ref = (row.get("reference") or _row_value(row, "ref", "onff", "nummer") or "").strip().upper()
         if not ref:
@@ -573,7 +591,9 @@ def point_refs(source: str | None, programs: list[str], have: set[str],
         warnings.append(f"{len(stats['orphan_polygons'])} polygonen staan niet in de WWFF-directory: "
                         + ", ".join(stats["orphan_polygons"][:12])
                         + ("…" if len(stats["orphan_polygons"]) > 12 else ""))
-    return features, entries, activity, warnings, stats
+    programs_map = {prog: counter.most_common(1)[0][0]
+                    for prog, counter in programs_seen.items() if counter}
+    return features, entries, activity, warnings, stats, programs_map
 
 
 def convert(kml_path: Path, tolerance: float, decimals: int, overrides: dict) -> tuple[dict, dict, dict]:
@@ -846,7 +866,7 @@ def main() -> int:
     print("→ WWFF directory", file=sys.stderr)
     have = {r["ref"] for r in index_doc["refs"]}
     programs = args.program.split(",")
-    pt_features, pt_entries, activity, pt_warnings, pt_stats = point_refs(
+    pt_features, pt_entries, activity, pt_warnings, pt_stats, programs_map = point_refs(
         None if args.no_refs else args.refs_csv, programs, have, overrides, args.decimals)
     stats["warnings"].extend(pt_warnings)
     stats["points"] = len(pt_features)
@@ -886,6 +906,17 @@ def main() -> int:
             json.dumps({"generated": index_doc["generated"],
                         "source": "wwff_directory.csv",
                         "refs": activity}, separators=(",", ":")), encoding="utf-8")
+
+    # Wereldwijde programma → land-lijst, voor het spots-filter in de app
+    # (Instellingen: alleen ONFF / één specifiek land / wereldwijd). Los van
+    # --program: die beperkt alleen wélke referenties de kaart zelf tekent.
+    if programs_map:
+        (args.out / "wwff-programs.json").write_text(
+            json.dumps({"generated": index_doc["generated"],
+                        "programs": [{"program": p, "country": c}
+                                     for p, c in sorted(programs_map.items(),
+                                                         key=lambda kv: kv[1])]},
+                       separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
 
     (args.out / "meta.json").write_text(json.dumps({
         "source_file": args.kmz.name,

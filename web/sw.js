@@ -20,9 +20,9 @@ const SHELL_FILES = [
   './icon-192.png', './icon-512.png', './apple-touch-icon.png', './start.jpg', './logo.png',
   './vendor/maplibre-gl.js', './vendor/maplibre-gl.css',
   './data/onff.geojson', './data/onff-index.json', './data/meta.json',
-  './data/onff-points.geojson', './data/onff-activity.json',
+  './data/onff-points.geojson', './data/onff-activity.json', './data/wwff-programs.json',
   '../data/onff.geojson', '../data/onff-index.json', '../data/meta.json',
-  '../data/onff-points.geojson', '../data/onff-activity.json',
+  '../data/onff-points.geojson', '../data/onff-activity.json', '../data/wwff-programs.json',
 ];
 
 self.addEventListener('install', e => {

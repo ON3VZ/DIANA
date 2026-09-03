@@ -101,9 +101,12 @@ to each one, labelled with frequency. **⤢ Zoom to all spots** re-frames the
 map to fit everything currently shown, including your own position.
 
 ### Spots (((·)))
-A list view of the same live spots and agenda, filterable to ONFF-only or
-worldwide, refreshed every 30 seconds. Tap a spot for bearing, distance, a
-compass heading, and both locators.
+A list view of the same live spots and agenda, refreshed every 30 seconds.
+Tap a spot for bearing, distance, a compass heading, and both locators.
+Diana shows **every WWFF spot worldwide** by default — the segmented control
+above the list (also on the map's layers panel) narrows that to ONFF only or
+to one specific country, and whichever you pick there is remembered as the
+new default for next time (see **Spots filter** under Settings below).
 
 ### Meld / self-spot (✚)
 Spot yourself. Reference number is pre-filled if you came from a zone's
@@ -125,8 +128,10 @@ locator nor a recognised prefix is set, the map falls back to fitting all
 currently loaded zones — never a meaningless blank world view.
 
 This is also where you set your **language** (the seven below, or "follow the
-browser") and where you **install Diana as an app**. Everything here is local
-to this device; see §Limitations.
+browser"), your **Spots filter** — worldwide by default, or narrowed to ONFF
+only or to one specific WWFF country, the same choice as the quick control on
+the Spots screen, kept in sync with it — and where you **install Diana as an
+app**. Everything here is local to this device; see §Limitations.
 
 ### Admin (⛭, hidden by default)
 For repository maintainers only — publishing new data and generating embed

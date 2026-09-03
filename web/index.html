@@ -22,6 +22,12 @@
     --radius:14px; --shadow:0 2px 10px rgba(18,41,29,.10), 0 8px 28px rgba(18,41,29,.06);
   }
   *{box-sizing:border-box}
+  /* Zonder dit wint een latere regel als ".instbar{display:flex}" of
+     ".banner{display:flex}" altijd van de standaard [hidden]-regel van de
+     browser (zelfde specificiteit, maar auteurs-CSS verslaat altijd de
+     ingebouwde stijl) — met als gevolg een balk die na .hidden=true gewoon
+     zichtbaar blijft. Eén !important hier voorkomt dat overal in de app. */
+  [hidden]{display:none !important}
   html,body{height:100%;margin:0}
   body{
     font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -587,6 +593,19 @@
 
   <div class="card">
     <h4 style="margin:0 0 10px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
+        data-i18n="set.spotstitle">Spots-filter</h4>
+    <p class="hint" style="margin:0 0 10px" data-i18n="set.spotslead">Welke spots en agenda-items Diana toont, op de kaart en in de Spots-lijst. Wat je hier kiest is meteen ook de instelling voor de volgende keer.</p>
+    <div class="segs" id="setSpotFilter">
+      <button class="seg" data-filter="onff">ONFF</button>
+      <button class="seg on" data-filter="all" data-i18n="spots.world">Wereldwijd</button>
+    </div>
+    <label class="fld" style="margin-top:10px"><span data-i18n="set.spotscountry">Of één specifiek land</span>
+      <select id="setSpotCountry"><option value="" data-i18n="set.spotscountrynone">— geen —</option></select>
+    </label>
+  </div>
+
+  <div class="card">
+    <h4 style="margin:0 0 10px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
         data-i18n="set.lang">Taal</h4>
     <div class="langs" id="setLang" style="flex-wrap:wrap">
       <button class="seg" data-lang="auto" data-i18n="set.langauto">Volg de browser</button>
@@ -762,11 +781,13 @@ const APP_VERSION = '1.3.0';
 /* ---------- startscherm ----------
  * Het duurt even voor 3,7 MB zonedata binnen is en de kaart getekend staat. In
  * plaats van een witte pagina toont Diana de tekening met een signaal eroverheen,
- * en gaat pas weg als er echt iets te zien is. Twee regels eromheen:
- *   - minstens 900 ms, anders flitst het scherm alleen maar
- *   - hoe dan ook weg na 9 s, want vastzitten op een startscherm is erger dan
+ * en gaat pas weg als er écht iets te zien is. Twee regels eromheen:
+ *   - minstens 5 s in beeld, ook als alles meteen klaar is — anders flitst het
+ *     scherm voorbij zonder dat iemand het logo of de versie ziet
+ *   - hoe dan ook weg na 12 s, want vastzitten op een startscherm is erger dan
  *     een kale kaart met een foutmelding erop
  */
+const MIN_SPLASH_MS = 5000;
 const splashStart = Date.now();
 let splashHidden = false;
 
@@ -778,7 +799,7 @@ function splashStep(pct, key){
 function splashDone(){
   if(splashHidden) return;
   splashHidden = true;
-  const wait = Math.max(0, 900 - (Date.now() - splashStart));
+  const wait = Math.max(0, MIN_SPLASH_MS - (Date.now() - splashStart));
   setTimeout(() => {
     const el = $('splash');
     if(!el) return;
@@ -786,7 +807,7 @@ function splashDone(){
     setTimeout(() => el.remove(), 600);   // ook uit de DOM: scheelt een laag over de kaart
   }, wait);
 }
-setTimeout(splashDone, 9000);
+setTimeout(splashDone, 12000);
 
 /* Opslag van dit toestel. Staat hier bovenaan omdat de taalkeuze, de
    instellingen én het installatiescherm er alle drie bij moeten — een const
@@ -912,6 +933,10 @@ const STR = {
   "spots.tabnow": "Nu actief",
   "spots.tabagenda": "Agenda",
   "spots.world": "Wereldwijd",
+  "set.spotstitle": "Spots-filter",
+  "set.spotslead": "Welke spots en agenda-items Diana toont, op de kaart en in de Spots-lijst. Wat je hier kiest is meteen ook de instelling voor de volgende keer.",
+  "set.spotscountry": "Of één specifiek land",
+  "set.spotscountrynone": "— geen —",
   "spots.loading": "laden…",
   "spots.none": "Geen actieve spots in deze selectie.",
   "spots.noagenda": "Niets aangekondigd in deze selectie.",
@@ -1147,6 +1172,10 @@ const STR = {
   "spots.tabnow": "On air",
   "spots.tabagenda": "Agenda",
   "spots.world": "Worldwide",
+  "set.spotstitle": "Spots filter",
+  "set.spotslead": "Which spots and agenda items Diana shows, on the map and in the Spots list. Whatever you pick here is also the setting for next time.",
+  "set.spotscountry": "Or one specific country",
+  "set.spotscountrynone": "— none —",
   "spots.loading": "loading…",
   "spots.none": "No active spots in this selection.",
   "spots.noagenda": "Nothing announced in this selection.",
@@ -1382,6 +1411,10 @@ const STR = {
   "spots.tabnow": "En cours",
   "spots.tabagenda": "Agenda",
   "spots.world": "Mondial",
+  "set.spotstitle": "Filtre des spots",
+  "set.spotslead": "Quels spots et éléments d'agenda Diana affiche, sur la carte et dans la liste des spots. Votre choix ici devient aussi le réglage par défaut la prochaine fois.",
+  "set.spotscountry": "Ou un seul pays en particulier",
+  "set.spotscountrynone": "— aucun —",
   "spots.loading": "chargement…",
   "spots.none": "Aucun spot actif dans cette sélection.",
   "spots.noagenda": "Rien d’annoncé dans cette sélection.",
@@ -1617,6 +1650,10 @@ const STR = {
   "spots.tabnow": "Jetzt aktiv",
   "spots.tabagenda": "Agenda",
   "spots.world": "Weltweit",
+  "set.spotstitle": "Spots-Filter",
+  "set.spotslead": "Welche Spots und Agenda-Einträge Diana zeigt, auf der Karte und in der Spots-Liste. Deine Wahl hier ist auch die Einstellung für das nächste Mal.",
+  "set.spotscountry": "Oder ein bestimmtes Land",
+  "set.spotscountrynone": "— keins —",
   "spots.loading": "lädt…",
   "spots.none": "Keine aktiven Spots in dieser Auswahl.",
   "spots.noagenda": "Nichts angekündigt in dieser Auswahl.",
@@ -1852,6 +1889,10 @@ const STR = {
   "spots.tabnow": "Aktiv nu",
   "spots.tabagenda": "Agenda",
   "spots.world": "Globalt",
+  "set.spotstitle": "Spots-filter",
+  "set.spotslead": "Hvilke spots og agendaelementer Diana viser, på kortet og i Spots-listen. Det du vælger her, er også indstillingen næste gang.",
+  "set.spotscountry": "Eller ét bestemt land",
+  "set.spotscountrynone": "— ingen —",
   "spots.loading": "indlæser…",
   "spots.none": "Ingen aktive spots i dette udvalg.",
   "spots.noagenda": "Intet annonceret i dette udvalg.",
@@ -2087,6 +2128,10 @@ const STR = {
   "spots.tabnow": "In aria",
   "spots.tabagenda": "Agenda",
   "spots.world": "Mondiale",
+  "set.spotstitle": "Filtro spot",
+  "set.spotslead": "Quali spot e voci d'agenda mostra Diana, sulla mappa e nell'elenco Spot. Ciò che scegli qui diventa anche l'impostazione per la prossima volta.",
+  "set.spotscountry": "Oppure un paese specifico",
+  "set.spotscountrynone": "— nessuno —",
   "spots.loading": "caricamento…",
   "spots.none": "Nessuno spot attivo in questa selezione.",
   "spots.noagenda": "Nulla annunciato in questa selezione.",
@@ -2322,6 +2367,10 @@ const STR = {
   "spots.tabnow": "En el aire",
   "spots.tabagenda": "Agenda",
   "spots.world": "Mundial",
+  "set.spotstitle": "Filtro de spots",
+  "set.spotslead": "Qué spots y elementos de la agenda muestra Diana, en el mapa y en la lista de spots. Lo que elijas aquí también será el ajuste la próxima vez.",
+  "set.spotscountry": "O un país específico",
+  "set.spotscountrynone": "— ninguno —",
   "spots.loading": "cargando…",
   "spots.none": "No hay spots activos en esta selección.",
   "spots.noagenda": "Nada anunciado en esta selección.",
@@ -2515,6 +2564,11 @@ let watchId = null;
 let noPoly = {type:'FeatureCollection', features:[]};
 const noPolyByRef = new Map();
 
+/* Wereldwijde WWFF-programma's → land, voor het spots-filter. Leeg tot
+   loadData() het opgehaald heeft; "alleen ONFF" en "wereldwijd" werken ook
+   zonder deze lijst, alleen "één specifiek land" heeft ze nodig. */
+let wwffPrograms = [];
+
 /* ---------- data laden ---------- */
 async function fetchFirst(urls){
   let lastErr;
@@ -2557,6 +2611,15 @@ async function loadData(){
     + (noPoly.features.length ? ` · ${noPoly.features.length} ${t('map.nopolycount')}` : '');
   const optNp = $('optNopoly');
   if(optNp) optNp.hidden = noPoly.features.length === 0;
+
+  // Programma → land, wereldwijd — voor het spots-filter (Instellingen: alleen
+  // ONFF / één land / overal). Ontbreekt het bestand (oudere data), dan blijft
+  // "één specifiek land" gewoon leeg; ONFF en Wereldwijd werken hoe dan ook.
+  try{
+    const doc = await fetchFirst(['./data/wwff-programs.json','../data/wwff-programs.json']);
+    wwffPrograms = (doc.programs || []).slice().sort((a,b)=>a.country.localeCompare(b.country));
+  }catch{ wwffPrograms = []; }
+  populateSpotCountries();
 }
 
 /* Eén labelpunt per referentie, op het grootste deelgebied — daar waar je in het
@@ -2730,11 +2793,15 @@ const dataReady = loadData().then(()=>{
 });
 
 /* Het startscherm gaat weg zodra de zones écht getekend zijn — niet zodra de
-   data binnen is. Anders zie je een lege kaart die zich nog aan het vullen is. */
+   data binnen is. Anders zie je een lege kaart die zich nog aan het vullen is.
+   Zijn er referenties zonder grens, dan telt ook hún laag mee: anders zou het
+   scherm al verdwijnen terwijl die stippen nog moeten verschijnen. */
 function whenDrawn(tries){
   tries = tries || 0;
-  const drawn = map.isStyleLoaded() && map.getLayer('onff-fill');
-  if(drawn || tries > 60){    // ~6 s, dan tonen we gewoon wat er is
+  const needsPoints = noPoly && noPoly.features && noPoly.features.length > 0;
+  const drawn = map.isStyleLoaded() && map.getLayer('onff-fill')
+    && (!needsPoints || map.getLayer('np-dot'));
+  if(drawn || tries > 100){    // ~10 s, dan tonen we gewoon wat er is
     splashStep(100, 'splash.ready');
     setTimeout(splashDone, 260);
     return;
@@ -3027,7 +3094,10 @@ const AGENDA_ALL = 'https://spots.wwff.co/static/agendas.json';
 const REFRESH_MS = 30000;
 
 let spots = [], agenda = [], spotsAt = null, spotsError = null;
-let showSpots = false, spotFilter = 'onff', spotTab = 'spots', spotTimer = null, here = null;
+// 'all' (wereldwijd), 'onff', of een programmacode zoals 'PAFF' (één land).
+// Wereldwijd is de fabrieksinstelling; wie ooit iets anders koos, krijgt dat
+// terug bij elke volgende start — zie Instellingen → Spots-filter.
+let showSpots = false, spotFilter = recall('spotFilter') || 'all', spotTab = 'spots', spotTimer = null, here = null;
 let agendaSkipped = 0;
 
 function startSpots(){
@@ -3060,9 +3130,18 @@ async function fetchSpots(){
 }
 
 const isONFF = r => typeof r === 'string' && r.toUpperCase().startsWith('ONFF');
+// Een WWFF-referentie is altijd "<PROGRAMMA>-<nummer>" en het programma eindigt
+// zelf al op "FF" (ONFF, PAFF, VKFF, …) — dus het stuk vóór het eerste streepje
+// ís de programmacode, wereldwijd, zonder aparte tabel nodig.
+const refProgram = r => (typeof r === 'string' ? r.toUpperCase().split('-')[0] : '');
+function spotVisible(ref){
+  if(spotFilter === 'all') return true;
+  if(spotFilter === 'onff') return isONFF(ref);
+  return refProgram(ref) === spotFilter;         // één specifiek land
+}
 const visibleSpots = () => spots
   .filter(s => s.latitude && s.longitude)
-  .filter(s => spotFilter === 'all' || isONFF(s.reference))
+  .filter(s => spotVisible(s.reference))
   .filter(s => ageMin(s) < 60);
 
 function ageMin(s){ return (Date.now()/1000 - (s.spot_time||0)) / 60; }
@@ -3158,7 +3237,7 @@ function paintSpots(){
   const agendaPlaced = [];
   agendaSkipped = 0;
   for(const a of agenda){
-    if(spotFilter !== 'all' && !isONFF(a.reference)) continue;
+    if(!spotVisible(a.reference)) continue;
     if(a.utc_end && a.utc_end < nowUTC) continue;
     const pos = refPosition(a.reference);
     if(!pos){ agendaSkipped++; continue; }
@@ -3314,7 +3393,7 @@ function renderAgenda(list, meta){
     meta.textContent=''; return;
   }
   const rows = agenda
-    .filter(a => spotFilter==='all' || isONFF(a.reference))
+    .filter(a => spotVisible(a.reference))
     .sort((a,b)=>String(a.utc_start).localeCompare(String(b.utc_start)));
   const nowUTC = new Date().toISOString().slice(0,19).replace('T',' ');
   list.innerHTML = rows.length ? rows.map(a=>{
@@ -3343,11 +3422,40 @@ $('spotTab').addEventListener('click', e=>{
   [...$('spotTab').children].forEach(c=>c.classList.toggle('on',c===b));
   renderSpots();
 });
+/* Instellingen ↔ het snelle filter boven de Spots-lijst delen dezelfde waarde
+   ('all' | 'onff' | een programmacode) — wat je hier kiest, is meteen ook de
+   fabrieksinstelling voor de volgende keer, en omgekeerd. */
+function setSpotFilter(value){
+  spotFilter = value;
+  remember('spotFilter', spotFilter);
+  syncSpotFilterUI();
+  paintSpots(); renderSpots();
+}
+function syncSpotFilterUI(){
+  [...$('spotFilter').children].forEach(c=>c.classList.toggle('on', c.dataset.filter===spotFilter));
+  const seg = $('setSpotFilter');
+  if(seg) [...seg.children].forEach(c=>c.classList.toggle('on', c.dataset.filter===spotFilter));
+  const sel = $('setSpotCountry');
+  if(sel) sel.value = (spotFilter!=='all' && spotFilter!=='onff') ? spotFilter : '';
+}
+function populateSpotCountries(){
+  const sel = $('setSpotCountry'); if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = `<option value="" data-i18n="set.spotscountrynone">${t('set.spotscountrynone')}</option>`
+    + wwffPrograms.map(p => `<option value="${p.program}">${p.country}</option>`).join('');
+  sel.value = current;
+  syncSpotFilterUI();
+}
 $('spotFilter').addEventListener('click', e=>{
   const b=e.target.closest('.seg'); if(!b) return;
-  spotFilter=b.dataset.filter;
-  [...$('spotFilter').children].forEach(c=>c.classList.toggle('on',c===b));
-  paintSpots(); renderSpots();
+  setSpotFilter(b.dataset.filter);
+});
+$('setSpotFilter').addEventListener('click', e=>{
+  const b=e.target.closest('.seg'); if(!b) return;
+  setSpotFilter(b.dataset.filter);
+});
+$('setSpotCountry').addEventListener('change', e=>{
+  setSpotFilter(e.target.value || 'all');
 });
 
 /* ---------- spotdetail ---------- */
@@ -3588,6 +3696,7 @@ function loadSettingsUI(){
   $('setCall').value  = cfg.call;
   $('setCallP').value = cfg.callp;
   $('setGrid').value  = cfg.grid;
+  syncSpotFilterUI();
   [...$('setView').children].forEach(b => b.classList.toggle('on', b.dataset.view2 === cfg.view));
   [...$('setLang').children].forEach(b => b.classList.toggle('on', b.dataset.lang === langPref));
   checkGrid();

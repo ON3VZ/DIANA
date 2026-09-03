@@ -44,6 +44,7 @@ it does not introduce a new data source.
 | `data/onff.geojson` | 3.7 MB (≈1 MB gzipped) | the map, on load | one `MultiPolygon` per ONFF reference, with name, province, area, and whatever attributes the source KMZ provided |
 | `data/onff-points.geojson` | small | the map, on load (optional — a missing file is not an error) | one `Point` per reference that exists on the ONFF list but has **no boundary** in the KMZ |
 | `data/onff-activity.json` | 39 kB | the Heatmap, as a fallback | QSO count and last-activation date per reference, taken from the WWFF directory |
+| `data/wwff-programs.json` | 7.5 kB | the Spots screen and Settings, to fill the "one specific country" list | every WWFF programme in the directory (worldwide) mapped to its country — has nothing to do with which zones the map draws |
 | `data/onff-index.json` | 210 kB | **not loaded by the app** — it exists for tooling, reports and anything built alongside Diana | the zone list **without geometry**: reference, name, province, area, centroid, bounding box, plus a `points` array covering the boundary-less references (including those with no known coordinate, which therefore appear in no other file) |
 | `data/meta.json` | small | not shown to the user; provenance only | which source KMZ, which release date, which build settings, and how many boundary-less references were placed or left unplaced |
 
@@ -112,6 +113,17 @@ which of them have a *boundary*. The two are joined on the reference number:
 That table is the whole de-duplication rule: **a polygon always wins, so a
 reference is drawn once and only once.** 932 + 16 = 948 = exactly the number of
 active ONFF references the directory lists.
+
+The same directory read also produces `data/wwff-programs.json` — every WWFF
+programme in the file (not only ONFF) mapped to its country, e.g.
+`{"program":"PAFF","country":"Netherlands"}`. This has nothing to do with the
+map itself, which stays ONFF-only regardless; it exists purely so the **spots
+screen** can offer "just this country" without Diana shipping a hand-maintained
+country list that would drift out of date. A reference's programme is read
+straight from its own prefix (`PAFF-0104` → `PAFF`) — the same string the
+directory's own `program` column carries — so the app needs no separate
+lookup to decide which programme a live spot belongs to, only to put a country
+name on it.
 
 Two data traps the build guards against, both real: the directory marks "position
 unknown" as latitude/longitude `0,0` *and* locator `JJ00AA` (which converts to
@@ -196,6 +208,16 @@ visible, paused when the browser tab is hidden.
 | `GET spots.wwff.co/static/agendas.json` | the full announced agenda |
 | `GET spots.wwff.co/api/references/validate?reference=X` | live check while typing a reference in the self-spot form: `{valid, is_active, name}` — an undocumented endpoint found in Spotline's own page source, not in any published API docs |
 | `POST spots.wwff.co/spots/store` | submitting your own spot (see below) |
+
+All three endpoints return every WWFF reference worldwide, not just ONFF —
+Diana fetches the lot and filters client-side against `spotFilter`, a value
+that is either `'all'` (the default), `'onff'`, or one programme code such as
+`'PAFF'`. A reference's programme is just the text before its first `-`
+(`PAFF-0104` → `PAFF`), so no lookup is needed to apply the filter itself —
+only `data/wwff-programs.json` (§2.1.1) to show a country **name** for it in
+the picker. The value is stored under `localStorage['diana.spotFilter']` and
+drives both the Spots-screen quick toggle and the Settings equivalent, kept
+in sync with each other by `syncSpotFilterUI()`.
 
 `agendas.json`/`agendas_active.json` carry **no coordinates** — Spotline
 doesn't publish where an announced-but-not-yet-active reference is. For ONFF
