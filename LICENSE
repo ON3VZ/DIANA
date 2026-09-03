@@ -1,0 +1,68 @@
+Diana — licence
+===============
+
+Two different things live in this repository, and they are not licensed the
+same way.
+
+--------------------------------------------------------------------------
+1. THE SOFTWARE  (build/, web/, .github/, and the scripts and configuration)
+--------------------------------------------------------------------------
+
+Copyright (c) 2026 Kristof Cornelis (ON3VZ)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+(This is the MIT licence. The code is genuinely open source: fork it, learn
+from it, build your own national version on it.)
+
+--------------------------------------------------------------------------
+2. THE CONTENT AND DATA  (source/, data/, and everything derived from them)
+--------------------------------------------------------------------------
+
+NOT open. All rights reserved by their respective owners.
+
+  * The ONFF reference boundaries originate from Belgian Flora & Fauna
+    (ONFF), part of Belgium Outdoor Shack, and are distributed by them
+    through their own channel. Diana renders them; Diana does not own them.
+  * The underlying protected-area geometry derives from the World Database
+    on Protected Areas (WDPA) and from Flemish and Walloon government
+    sources, each with their own terms.
+  * Activation figures come from the ONFF status sheet, maintained by the
+    ONFF coordinator.
+  * Live spots come from WWFF Spotline.
+
+You may view this data through Diana. You may not redistribute it, republish
+it, bulk-download it into another product, or reuse it in any other service,
+without written permission from the ONFF coordinator.
+
+A plain word about what that means in practice: the app has to send the zone
+boundaries to every visitor's browser, because that is how a map works. This
+notice does not change that, and it cannot technically prevent anyone from
+saving the file. What it does is state the terms plainly, so that reuse is a
+deliberate choice rather than an assumption. If you want this data for
+another project, ask ONFF — they are approachable, and it is their work.
+
+--------------------------------------------------------------------------
+3. THIRD-PARTY COMPONENTS
+--------------------------------------------------------------------------
+
+  * MapLibre GL JS (web/vendor/) — BSD-3-Clause, see its own licence header.
+  * Base map tiles — OpenFreeMap, from OpenStreetMap data, ODbL.
+    Attribution required and shown in the app:
+    "OpenFreeMap © OpenMapTiles Data from OpenStreetMap"

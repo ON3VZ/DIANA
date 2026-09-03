@@ -4,7 +4,24 @@ Kaart-app voor de Belgische ONFF-natuurgebieden (Belgian Flora & Fauna, onderdee
 WWFF) met live WWFF-spots. Een PWA op een open-source achtergrondkaart, die offline
 werkt en embedbaar is op een website.
 
+Code: MIT. Data: niet vrij — zie [LICENSE](LICENSE).
+
 Dit is de repo. Het volledige plan staat in `Diana - Technisch plan v0.6.md`; online zetten staat in [DEPLOY.md](DEPLOY.md).
+
+## Documentatie (Engels)
+
+Uitgebreide documentatie per doelgroep staat in [`docs/`](docs/):
+
+| Document | Voor wie | Inhoud |
+|---|---|---|
+| [docs/DEVELOPER.md](docs/DEVELOPER.md) | ontwikkelaars | repo clonen, de twee GitHub Actions-workflows, `data/*.json` genereren — automatisch én manueel |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | ontwikkelaars/beheerders | waar elke databron vandaan komt, welke API's er lopen, welke mappen de app inleest |
+| [docs/ADMIN.md](docs/ADMIN.md) | beheerders | een nieuwe ONFF-release publiceren, het adminscherm in de app gebruiken, foutopsporing |
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | gebruikers | platformen, installeren als app, elk scherm uitgelegd, embedden, en de **beperkingen** (alles lokaal, geen synchronisatie tussen toestellen) |
+
+Deze Nederlandstalige `README.md` en `DEPLOY.md` blijven de kortste weg voor
+wie al met de repo vertrouwd is; de `docs/`-map is de volledige, Engelstalige
+uitleg voor elk van de vier doelgroepen hierboven.
 
 ---
 
@@ -35,11 +52,19 @@ python3 -m http.server 8000        # vanuit de repo-root, niet vanuit web/
 Vanuit `web/` starten werkt niet: de app haalt `../data/onff.geojson` op, en dat valt
 dan buiten de serverroot.
 
-Vijf schermen in de onderbalk: **Kaart** (zones, vier kaartstijlen, zoeken,
+Zes schermen in de onderbalk: **Kaart** (zones, vier kaartstijlen, zoeken,
 gebiedspaneel, GPS met "sta ik in de zone"), **Spots** (wat er nu actief is én de
-aangekondigde agenda, met richting en afstand), **Sessie** (activatiesessie met
-GPX-bewijs), **Heatmap** en **Regels**. Plus NL/FR/EN en een service worker die alles
-offline houdt.
+aangekondigde agenda, met richting en afstand), **Meld** (jezelf spotten via Spotline),
+**Sessie** (activatiesessie met GPX-bewijs), **Heatmap** (kleurt de kaart op laatste
+activatie of aantal QSO's) en **Regels** (bandplan per mode). Plus NL/FR/EN en een
+service worker die alles offline houdt.
+
+Het zelfmeldscherm neemt de validatieregels over uit de eigen paginacode van
+`spots.wwff.co/spots/create` (roepteken-patroon, frequentiebereik, referentie van
+minstens 7 tekens, opmerking van hoogstens 100 tekens) en controleert de referentie via
+hun endpoint `/api/references/validate`. Versturen gebeurt als een **gewone
+formulierpost in een nieuw tabblad** — dat mag cross-origin, en de gebruiker ziet de
+bevestiging van Spotline zelf. Daardoor is er voor deze functie géén proxy nodig.
 
 Referentienummers staan standaard aan. Ze komen uit een aparte puntenbron met één punt
 per referentie: zet je ze op de vlakkenlaag, dan tekent MapLibre een label per
@@ -54,6 +79,7 @@ polygoondeel — en ONFF-0329 bestaat uit 67 losse percelen.
 | `?prov=limburg` | inzoomen op een provincie |
 | `?spots=1` | de spotslaag meteen aanzetten |
 | `?embed=1` | app-chrome verbergen voor een iframe |
+| `?admin=1` | het beheerscherm tonen (ook: vijf keer op het logo tikken) |
 
 ```html
 <iframe src="https://diana.<domein>/web/?embed=1&prov=antwerpen&lang=nl&spots=1"
