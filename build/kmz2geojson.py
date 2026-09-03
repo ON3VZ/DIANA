@@ -14,6 +14,9 @@ static data files the Diana PWA loads:
     data/wwff-programs.json every WWFF programme in the directory mapped to its country
                             (worldwide, not just ONFF) — lets the app's spots screen offer
                             a "just this country" filter without shipping a hand-kept list
+    data/wwff-world.geojson every OTHER active WWFF reference worldwide (not ONFF), as bare
+                            Points — ref and name only, never a boundary; this is the "other
+                            WWFF areas" layer, off-ONFF-map but still Diana's own data
 
 It also writes a human-readable diff report against the previous index, which the
 GitHub Action posts under the pull request and the /admin page renders in plain
@@ -593,7 +596,31 @@ def point_refs(source: str | None, programs: list[str], have: set[str],
                         + ("…" if len(stats["orphan_polygons"]) > 12 else ""))
     programs_map = {prog: counter.most_common(1)[0][0]
                     for prog, counter in programs_seen.items() if counter}
-    return features, entries, activity, warnings, stats, programs_map
+
+    # Elke actieve referentie buiten --program, als kaal punt: geen naam-per-land,
+    # geen provincie, geen IUCN — enkel wat nodig is om een stip te zetten, want
+    # dit wordt al gauw tienduizenden features. Nooit een grens: die bestaat voor
+    # geen enkel ander land in wat wij hebben. Positie ontbreekt bij een klein
+    # deel (~1%); die worden overgeslagen, nooit verzonnen.
+    world_features = []
+    for row in rows:
+        ref = (row.get("reference") or "").strip().upper()
+        if not ref or (wanted and ref.startswith(wanted)):
+            continue
+        status = (row.get("status") or "active").strip().lower()
+        if status != "active":
+            continue
+        latlon = _row_latlon(row)
+        if not latlon:
+            continue
+        lat, lon = (round(v, 4) for v in latlon)
+        world_features.append({
+            "type": "Feature",
+            "properties": {"ref": ref, "name": (row.get("name") or "").strip()},
+            "geometry": {"type": "Point", "coordinates": [lon, lat]},
+        })
+
+    return features, entries, activity, warnings, stats, programs_map, world_features
 
 
 def convert(kml_path: Path, tolerance: float, decimals: int, overrides: dict) -> tuple[dict, dict, dict]:
@@ -866,7 +893,7 @@ def main() -> int:
     print("→ WWFF directory", file=sys.stderr)
     have = {r["ref"] for r in index_doc["refs"]}
     programs = args.program.split(",")
-    pt_features, pt_entries, activity, pt_warnings, pt_stats, programs_map = point_refs(
+    pt_features, pt_entries, activity, pt_warnings, pt_stats, programs_map, world_features = point_refs(
         None if args.no_refs else args.refs_csv, programs, have, overrides, args.decimals)
     stats["warnings"].extend(pt_warnings)
     stats["points"] = len(pt_features)
@@ -918,6 +945,17 @@ def main() -> int:
                                                          key=lambda kv: kv[1])]},
                        separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
 
+    # De "andere WWFF-gebieden"-laag: elke actieve referentie buiten --program,
+    # als kaal punt. Alleen geschreven als de directory echt gelezen kon worden
+    # (anders zou dit een leeg of enorm-verouderd bestand overschrijven met iets
+    # dat er nog leger uitziet); anders blijft de vorige versie gewoon staan.
+    if world_features:
+        (args.out / "wwff-world.geojson").write_text(
+            json.dumps({"type": "FeatureCollection",
+                        "generated": index_doc["generated"],
+                        "features": world_features}, separators=(",", ":"), ensure_ascii=False),
+            encoding="utf-8")
+
     (args.out / "meta.json").write_text(json.dumps({
         "source_file": args.kmz.name,
         "release": stats["release"],
@@ -928,6 +966,7 @@ def main() -> int:
         "points_no_polygon": stats["points"],
         "points_unplaced": stats["points_unplaced"],
         "activity_refs": len(activity),
+        "world_points": len(world_features),
         "source_polygons": stats["polygons"],
         "tolerance_deg": args.tolerance,
         "decimals": args.decimals,
@@ -943,7 +982,8 @@ def main() -> int:
         pts = f" · {stats['points']} punten zonder polygoon"
         if stats["points_unplaced"]:
             pts += f" (+{stats['points_unplaced']} zonder coordinaat)"
-    print(f"✓ {stats['zones']} zones · {size:.2f} MB{note}{pts}", file=sys.stderr)
+    world_note = f" · {len(world_features)} wereldwijde WWFF-punten" if world_features else ""
+    print(f"✓ {stats['zones']} zones · {size:.2f} MB{note}{pts}{world_note}", file=sys.stderr)
     if stats["warnings"]:
         print(f"⚠ {len(stats['warnings'])} warnings — see {args.report}", file=sys.stderr)
     return 0

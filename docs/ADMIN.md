@@ -124,11 +124,14 @@ profile, and by any script that runs on that page. That is simply what
 ### Generating an embed snippet
 
 The same Admin panel has an embed-code generator: fill in a province, a
-language, and whether the spots layer should be on by default, and it
-produces a ready-to-paste `<iframe>`:
+language, and whether the spots layer and/or the "other WWFF areas" layer
+should be on, and it produces a ready-to-paste `<iframe>`. Both layers are
+on by default in the app itself but default to **off** inside an embed —
+they only appear when their checkbox is ticked here, so an already-published
+snippet never changes on its own:
 
 ```html
-<iframe src="https://<your-domain>/?embed=1&prov=antwerpen&lang=en&spots=1"
+<iframe src="https://<your-domain>/?embed=1&prov=antwerpen&lang=en&spots=1&world=1"
         width="100%" height="600" style="border:0"
         loading="lazy" allow="geolocation"></iframe>
 ```

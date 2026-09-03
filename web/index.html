@@ -460,7 +460,8 @@
   <div class="opt on" data-layer="onff"><span data-i18n="lay.onff">ONFF-gebieden</span> <span class="sw on"></span></div>
   <div class="opt on" data-layer="labels"><span data-i18n="lay.labels">Referentienummers</span> <span class="sw on"></span></div>
   <div class="opt on" data-layer="nopoly" id="optNopoly" hidden><span data-i18n="lay.nopoly">Zonder grens (punt)</span> <span class="sw on"></span></div>
-  <div class="opt" data-layer="spots"><span data-i18n="lay.spots">Spots &amp; agenda</span> <span class="sw"></span></div>
+  <div class="opt on" data-layer="spots"><span data-i18n="lay.spots">Spots &amp; agenda</span> <span class="sw on"></span></div>
+  <div class="opt on" data-layer="world" id="optWorld" hidden><span data-i18n="lay.world">Andere WWFF-gebieden</span> <span class="sw on"></span></div>
   <div class="opt disabled"><span data-i18n="lay.other">BCA, BLHA…</span> <span class="sw"></span></div>
   <p class="hint" data-i18n="lay.spothint">Spots komen live van WWFF Spotline en verversen elke 30 s.</p>
   <button class="btn ghost" id="btnFit" style="margin-top:6px;font-size:13.5px;padding:10px" data-i18n="lay.fit">⤢ Alle spots in beeld</button>
@@ -557,6 +558,7 @@
         <input id="embLang" type="text" autocomplete="off" placeholder="nl"></label>
     </div>
     <label class="chk"><input type="checkbox" id="embSpots" checked> <span data-i18n="adm.embspots">Spots meteen aan</span></label>
+    <label class="chk"><input type="checkbox" id="embWorld"> <span data-i18n="adm.embworld">Ook andere WWFF-gebieden</span></label>
     <pre class="code" id="embCode"></pre>
     <button class="btn ghost" id="embCopy" data-i18n="adm.copy">Kopiëren</button>
   </div>
@@ -601,6 +603,15 @@
     </div>
     <label class="fld" style="margin-top:10px"><span data-i18n="set.spotscountry">Of één specifiek land</span>
       <select id="setSpotCountry"><option value="" data-i18n="set.spotscountrynone">— geen —</option></select>
+    </label>
+  </div>
+
+  <div class="card">
+    <h4 style="margin:0 0 10px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)"
+        data-i18n="set.worldtitle">Andere WWFF-gebieden</h4>
+    <p class="hint" style="margin:0 0 10px" data-i18n="set.worldlead">Referentiepunten uit de wereldwijde WWFF-lijst, buiten België — altijd als punt, nooit als grens (die hebben we alleen voor ONFF). Standaard toont Diana ze allemaal; kies hieronder een land om te beperken.</p>
+    <label class="fld"><span data-i18n="set.worldcountry">Alleen dit land tonen</span>
+      <select id="setWorldCountry"><option value="" data-i18n="set.worldcountrynone">— alle landen —</option></select>
     </label>
   </div>
 
@@ -884,6 +895,7 @@ const STR = {
   "adm.embprov": "Provincie / regio",
   "adm.emblang": "Taal",
   "adm.embspots": "Spots meteen aan",
+  "adm.embworld": "Ook andere WWFF-gebieden",
   "adm.copy": "Kopiëren",
   "adm.copied": "Gekopieerd",
   "adm.copyfail": "Kopiëren lukte niet",
@@ -903,6 +915,7 @@ const STR = {
   "lay.onff": "Natuurgebieden",
   "lay.labels": "Referentienummers",
   "lay.spots": "Spots & agenda",
+  "lay.world": "Andere WWFF-gebieden",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Taal",
   "lay.offline": "⤓ Dit gebied offline bewaren",
@@ -937,6 +950,10 @@ const STR = {
   "set.spotslead": "Welke spots en agenda-items Diana toont, op de kaart en in de Spots-lijst. Wat je hier kiest is meteen ook de instelling voor de volgende keer.",
   "set.spotscountry": "Of één specifiek land",
   "set.spotscountrynone": "— geen —",
+  "set.worldtitle": "Andere WWFF-gebieden",
+  "set.worldlead": "Referentiepunten uit de wereldwijde WWFF-lijst, buiten België — altijd als punt, nooit als grens (die hebben we alleen voor ONFF). Standaard toont Diana ze allemaal; kies hieronder een land om te beperken.",
+  "set.worldcountry": "Alleen dit land tonen",
+  "set.worldcountrynone": "— alle landen —",
   "spots.loading": "laden…",
   "spots.none": "Geen actieve spots in deze selectie.",
   "spots.noagenda": "Niets aangekondigd in deze selectie.",
@@ -1123,6 +1140,7 @@ const STR = {
   "adm.embprov": "Province / region",
   "adm.emblang": "Language",
   "adm.embspots": "Spots on by default",
+  "adm.embworld": "Other WWFF areas too",
   "adm.copy": "Copy",
   "adm.copied": "Copied",
   "adm.copyfail": "Could not copy",
@@ -1142,6 +1160,7 @@ const STR = {
   "lay.onff": "Reference areas",
   "lay.labels": "Reference numbers",
   "lay.spots": "Spots & agenda",
+  "lay.world": "Other WWFF areas",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Language",
   "lay.offline": "⤓ Save this area offline",
@@ -1176,6 +1195,10 @@ const STR = {
   "set.spotslead": "Which spots and agenda items Diana shows, on the map and in the Spots list. Whatever you pick here is also the setting for next time.",
   "set.spotscountry": "Or one specific country",
   "set.spotscountrynone": "— none —",
+  "set.worldtitle": "Other WWFF areas",
+  "set.worldlead": "Reference points from the worldwide WWFF list, outside Belgium — always shown as a point, never as a boundary (we only have those for ONFF). Diana shows all of them by default; pick a country below to narrow it down.",
+  "set.worldcountry": "Show only this country",
+  "set.worldcountrynone": "— all countries —",
   "spots.loading": "loading…",
   "spots.none": "No active spots in this selection.",
   "spots.noagenda": "Nothing announced in this selection.",
@@ -1362,6 +1385,7 @@ const STR = {
   "adm.embprov": "Province / région",
   "adm.emblang": "Langue",
   "adm.embspots": "Spots activés d’emblée",
+  "adm.embworld": "Aussi les autres zones WWFF",
   "adm.copy": "Copier",
   "adm.copied": "Copié",
   "adm.copyfail": "Copie impossible",
@@ -1381,6 +1405,7 @@ const STR = {
   "lay.onff": "Zones",
   "lay.labels": "Numéros de référence",
   "lay.spots": "Spots et agenda",
+  "lay.world": "Autres zones WWFF",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Langue",
   "lay.offline": "⤓ Enregistrer hors ligne",
@@ -1415,6 +1440,10 @@ const STR = {
   "set.spotslead": "Quels spots et éléments d'agenda Diana affiche, sur la carte et dans la liste des spots. Votre choix ici devient aussi le réglage par défaut la prochaine fois.",
   "set.spotscountry": "Ou un seul pays en particulier",
   "set.spotscountrynone": "— aucun —",
+  "set.worldtitle": "Autres zones WWFF",
+  "set.worldlead": "Points de référence de la liste WWFF mondiale, en dehors de la Belgique — toujours affichés comme un point, jamais comme une limite (nous n'avons cela que pour l'ONFF). Diana les affiche tous par défaut ; choisissez un pays ci-dessous pour restreindre.",
+  "set.worldcountry": "N'afficher que ce pays",
+  "set.worldcountrynone": "— tous les pays —",
   "spots.loading": "chargement…",
   "spots.none": "Aucun spot actif dans cette sélection.",
   "spots.noagenda": "Rien d’annoncé dans cette sélection.",
@@ -1601,6 +1630,7 @@ const STR = {
   "adm.embprov": "Provinz / Region",
   "adm.emblang": "Sprache",
   "adm.embspots": "Spots direkt an",
+  "adm.embworld": "Auch andere WWFF-Gebiete",
   "adm.copy": "Kopieren",
   "adm.copied": "Kopiert",
   "adm.copyfail": "Kopieren fehlgeschlagen",
@@ -1620,6 +1650,7 @@ const STR = {
   "lay.onff": "Schutzgebiete",
   "lay.labels": "Referenznummern",
   "lay.spots": "Spots & Agenda",
+  "lay.world": "Andere WWFF-Gebiete",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Sprache",
   "lay.offline": "⤓ Dieses Gebiet offline speichern",
@@ -1654,6 +1685,10 @@ const STR = {
   "set.spotslead": "Welche Spots und Agenda-Einträge Diana zeigt, auf der Karte und in der Spots-Liste. Deine Wahl hier ist auch die Einstellung für das nächste Mal.",
   "set.spotscountry": "Oder ein bestimmtes Land",
   "set.spotscountrynone": "— keins —",
+  "set.worldtitle": "Andere WWFF-Gebiete",
+  "set.worldlead": "Referenzpunkte aus der weltweiten WWFF-Liste, außerhalb Belgiens — immer als Punkt dargestellt, nie als Grenze (die haben wir nur für ONFF). Diana zeigt standardmäßig alle; wähle unten ein Land, um einzuschränken.",
+  "set.worldcountry": "Nur dieses Land anzeigen",
+  "set.worldcountrynone": "— alle Länder —",
   "spots.loading": "lädt…",
   "spots.none": "Keine aktiven Spots in dieser Auswahl.",
   "spots.noagenda": "Nichts angekündigt in dieser Auswahl.",
@@ -1840,6 +1875,7 @@ const STR = {
   "adm.embprov": "Provins / region",
   "adm.emblang": "Sprog",
   "adm.embspots": "Spots slået til",
+  "adm.embworld": "Også andre WWFF-områder",
   "adm.copy": "Kopiér",
   "adm.copied": "Kopieret",
   "adm.copyfail": "Kunne ikke kopiere",
@@ -1859,6 +1895,7 @@ const STR = {
   "lay.onff": "Områder",
   "lay.labels": "Referencenumre",
   "lay.spots": "Spots & agenda",
+  "lay.world": "Andre WWFF-områder",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Sprog",
   "lay.offline": "⤓ Gem dette område offline",
@@ -1893,6 +1930,10 @@ const STR = {
   "set.spotslead": "Hvilke spots og agendaelementer Diana viser, på kortet og i Spots-listen. Det du vælger her, er også indstillingen næste gang.",
   "set.spotscountry": "Eller ét bestemt land",
   "set.spotscountrynone": "— ingen —",
+  "set.worldtitle": "Andre WWFF-områder",
+  "set.worldlead": "Referencepunkter fra den verdensomspændende WWFF-liste, uden for Belgien — vises altid som et punkt, aldrig som en grænse (det har vi kun for ONFF). Diana viser som standard dem alle; vælg et land nedenfor for at begrænse.",
+  "set.worldcountry": "Vis kun dette land",
+  "set.worldcountrynone": "— alle lande —",
   "spots.loading": "indlæser…",
   "spots.none": "Ingen aktive spots i dette udvalg.",
   "spots.noagenda": "Intet annonceret i dette udvalg.",
@@ -2079,6 +2120,7 @@ const STR = {
   "adm.embprov": "Provincia / regione",
   "adm.emblang": "Lingua",
   "adm.embspots": "Spot subito attivi",
+  "adm.embworld": "Anche altre aree WWFF",
   "adm.copy": "Copia",
   "adm.copied": "Copiato",
   "adm.copyfail": "Copia non riuscita",
@@ -2098,6 +2140,7 @@ const STR = {
   "lay.onff": "Aree",
   "lay.labels": "Numeri di riferimento",
   "lay.spots": "Spot e agenda",
+  "lay.world": "Altre aree WWFF",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Lingua",
   "lay.offline": "⤓ Salva quest’area offline",
@@ -2132,6 +2175,10 @@ const STR = {
   "set.spotslead": "Quali spot e voci d'agenda mostra Diana, sulla mappa e nell'elenco Spot. Ciò che scegli qui diventa anche l'impostazione per la prossima volta.",
   "set.spotscountry": "Oppure un paese specifico",
   "set.spotscountrynone": "— nessuno —",
+  "set.worldtitle": "Altre aree WWFF",
+  "set.worldlead": "Punti di riferimento dall'elenco mondiale WWFF, al di fuori del Belgio — mostrati sempre come punto, mai come confine (lo abbiamo solo per l'ONFF). Diana li mostra tutti per impostazione predefinita; scegli un paese qui sotto per limitare.",
+  "set.worldcountry": "Mostra solo questo paese",
+  "set.worldcountrynone": "— tutti i paesi —",
   "spots.loading": "caricamento…",
   "spots.none": "Nessuno spot attivo in questa selezione.",
   "spots.noagenda": "Nulla annunciato in questa selezione.",
@@ -2318,6 +2365,7 @@ const STR = {
   "adm.embprov": "Provincia / región",
   "adm.emblang": "Idioma",
   "adm.embspots": "Spots activados",
+  "adm.embworld": "También otras zonas WWFF",
   "adm.copy": "Copiar",
   "adm.copied": "Copiado",
   "adm.copyfail": "No se pudo copiar",
@@ -2337,6 +2385,7 @@ const STR = {
   "lay.onff": "Zonas",
   "lay.labels": "Números de referencia",
   "lay.spots": "Spots y agenda",
+  "lay.world": "Otras zonas WWFF",
   "lay.other": "BCA, BLHA…",
   "lay.lang": "Idioma",
   "lay.offline": "⤓ Guardar esta zona sin conexión",
@@ -2371,6 +2420,10 @@ const STR = {
   "set.spotslead": "Qué spots y elementos de la agenda muestra Diana, en el mapa y en la lista de spots. Lo que elijas aquí también será el ajuste la próxima vez.",
   "set.spotscountry": "O un país específico",
   "set.spotscountrynone": "— ninguno —",
+  "set.worldtitle": "Otras zonas WWFF",
+  "set.worldlead": "Puntos de referencia de la lista mundial de WWFF, fuera de Bélgica — siempre como punto, nunca como límite (eso solo lo tenemos para ONFF). Diana los muestra todos de forma predeterminada; elige un país abajo para limitar.",
+  "set.worldcountry": "Mostrar solo este país",
+  "set.worldcountrynone": "— todos los países —",
   "spots.loading": "cargando…",
   "spots.none": "No hay spots activos en esta selección.",
   "spots.noagenda": "Nada anunciado en esta selección.",
@@ -2620,6 +2673,7 @@ async function loadData(){
     wwffPrograms = (doc.programs || []).slice().sort((a,b)=>a.country.localeCompare(b.country));
   }catch{ wwffPrograms = []; }
   populateSpotCountries();
+  populateWorldCountries();
 }
 
 /* Eén labelpunt per referentie, op het grootste deelgebied — daar waar je in het
@@ -2768,6 +2822,109 @@ function paintNoPoly(){
 }
 let npBound = false;
 
+/* ---------- andere WWFF-gebieden wereldwijd (uit dezelfde CSV) ----------
+   Nooit een grens — enkel een punt, net als bij een ONFF-referentie zonder
+   polygoon. Bij duizenden punten wordt geclusterd (MapLibre's ingebouwde
+   cluster-optie), anders is de kaart bij een wereldzoom onleesbaar. */
+let showWorld = true;
+let worldFilter = recall('worldFilter') || 'all';
+let worldPoints = {type:'FeatureCollection', features:[]};
+let worldLoaded = false, worldLoading = null;
+let worldBound = false;
+
+async function loadWorldPoints(){
+  if(worldLoaded || worldLoading) return worldLoading;
+  worldLoading = (async () => {
+    try{
+      worldPoints = await fetchFirst(['./data/wwff-world.geojson','../data/wwff-world.geojson']);
+    }catch{ worldPoints = {type:'FeatureCollection', features:[]}; }
+    worldLoaded = true;
+    const optW = $('optWorld');
+    if(optW) optW.hidden = worldPoints.features.length === 0;
+    paintWorld();
+  })();
+  return worldLoading;
+}
+
+function worldFilteredData(){
+  if(worldFilter === 'all') return worldPoints;
+  const feats = worldPoints.features.filter(f => refProgram(f.properties.ref) === worldFilter);
+  return {type:'FeatureCollection', features:feats};
+}
+
+function paintWorld(tries){
+  if(!worldLoaded) return;
+  // De data kan sneller binnen zijn dan de kaartstijl (het bestand is groot).
+  // In dat geval gewoon even opnieuw proberen — anders blijft de laag stil
+  // liggen tot er toevallig iets anders redrawOverlays() aanroept.
+  if(!map.isStyleLoaded()){
+    tries = tries || 0;
+    if(tries > 100) return;    // ~8 s, dan geven we het op
+    setTimeout(()=>paintWorld(tries+1), 80);
+    return;
+  }
+  const data = worldFilteredData();
+  const src = map.getSource('wwff-world');
+  if(src){ src.setData(data); applyVisibility(); return; }
+  if(!worldPoints.features.length) return;
+  map.addSource('wwff-world', { type:'geojson', data, cluster:true, clusterRadius:50, clusterMaxZoom:9 });
+  map.addLayer({ id:'world-clusters', type:'circle', source:'wwff-world', filter:['has','point_count'],
+    paint:{ 'circle-color':'#6b8577', 'circle-opacity':0.75,
+            'circle-radius':['step',['get','point_count'],14, 50,18, 500,24, 5000,30],
+            'circle-stroke-width':1.5, 'circle-stroke-color':'#f6f4ee' } });
+  if(map.getStyle().glyphs) map.addLayer({
+    id:'world-cluster-count', type:'symbol', source:'wwff-world', filter:['has','point_count'],
+    layout:{'text-field':['get','point_count_abbreviated'],'text-font':['Noto Sans Regular'],'text-size':11},
+    paint:{'text-color':'#fff'} });
+  map.addLayer({ id:'world-point', type:'circle', source:'wwff-world', filter:['!',['has','point_count']],
+    paint:{ 'circle-radius':4, 'circle-color':'#6b8577', 'circle-opacity':0.85,
+            'circle-stroke-width':1, 'circle-stroke-color':'#f6f4ee' } });
+  if(!worldBound){
+    worldBound = true;
+    map.on('click','world-clusters', e => {
+      const f = map.queryRenderedFeatures(e.point, {layers:['world-clusters']})[0];
+      const clusterId = f.properties.cluster_id;
+      map.getSource('wwff-world').getClusterExpansionZoom(clusterId, (err, zoom) => {
+        if(err) return;
+        map.easeTo({center: f.geometry.coordinates, zoom});
+      });
+    });
+    map.on('click','world-point', e => {
+      const f = e.features[0];
+      new maplibregl.Popup({closeButton:true, maxWidth:'240px'})
+        .setLngLat(f.geometry.coordinates)
+        .setHTML(`<b>${f.properties.ref}</b><br>${f.properties.name||''}`)
+        .addTo(map);
+    });
+    map.on('mouseenter','world-clusters',()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave','world-clusters',()=>map.getCanvas().style.cursor='');
+    map.on('mouseenter','world-point',()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave','world-point',()=>map.getCanvas().style.cursor='');
+  }
+  applyVisibility();
+}
+
+function setWorldFilter(value){
+  worldFilter = value;
+  remember('worldFilter', worldFilter);
+  syncWorldFilterUI();
+  if(worldLoaded) paintWorld();
+}
+
+function syncWorldFilterUI(){
+  const sel = $('setWorldCountry');
+  if(sel) sel.value = (worldFilter!=='all') ? worldFilter : '';
+}
+
+function populateWorldCountries(){
+  const sel = $('setWorldCountry'); if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = `<option value="" data-i18n="set.worldcountrynone">${t('set.worldcountrynone')}</option>`
+    + wwffPrograms.map(p => `<option value="${p.program}">${p.country}</option>`).join('');
+  sel.value = current;
+  syncWorldFilterUI();
+}
+
 /* De data staat los van de kaart. Valt de achtergrondkaart weg — geen netwerk,
    nog niets in de cache — dan blijven zoeken, sessie, regels en heatmap gewoon
    werken. Alleen de tegels ontbreken dan. */
@@ -2785,6 +2942,8 @@ const dataReady = loadData().then(()=>{
   loadSettingsUI();
   applyHomeView();
   try{ applyEmbed(); }catch(err){ console.error('embed-parameters:', err); }
+  if(showSpots) startSpots();
+  if(showWorld) loadWorldPoints();
   whenDrawn();
 }).catch(err=>{
   $('counts').textContent = t('map.datafail');
@@ -2826,11 +2985,20 @@ $('langPick').addEventListener('click', e=>{
   applyLang();
 });
 
-/* ---------- embed-modus: ?embed=1&prov=…&ref=…&lang=…&spots=1 ---------- */
+/* ---------- embed-modus: ?embed=1&prov=…&ref=…&lang=…&spots=1&world=1 ----------
+   Een <iframe> die al ergens staat mag niet ineens spots of wereldpunten laten
+   verschijnen omdat de standaardwaarde in de app veranderd is — in een embed
+   blijven beide lagen dus uit tenzij de parameter er expliciet bij staat. */
 function applyEmbed(){
   const q = new URLSearchParams(location.search);
+  if(q.get('embed')==='1'){
+    showSpots = q.get('spots')==='1';
+    showWorld = q.get('world')==='1';
+  }
   if(q.get('spots')==='1'){ showSpots=true; startSpots();
     const o=document.querySelector('[data-layer="spots"]'); if(o){o.classList.add('on');o.querySelector('.sw').classList.add('on');} }
+  if(q.get('world')==='1'){ showWorld=true; loadWorldPoints();
+    const o=document.querySelector('[data-layer="world"]'); if(o){o.classList.add('on');o.querySelector('.sw').classList.add('on');} }
   if(q.get('ref')) select(q.get('ref').toUpperCase());
   if(q.get('prov')){
     const p=q.get('prov').toLowerCase();
@@ -2886,6 +3054,7 @@ function redrawOverlays(){
       // er nooit bij — dezelfde valkuil als eerder bij de spots.
       paintNoPoly();
       if(showSpots) paintSpots();
+      if(showWorld) paintWorld();
       applyVisibility();
       reselect();
       if(heatOnMap) applyHeatPaint(true);
@@ -2907,6 +3076,9 @@ function applyVisibility(){
   ['spots-pulse','spots-icon','spots-call','agenda-dot','agenda-label',
    'spot-arcs-line','agenda-arcs-line']
     .forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',sv); });
+  const wv = showWorld ? 'visible' : 'none';
+  ['world-clusters','world-cluster-count','world-point']
+    .forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',wv); });
 }
 
 /* ---------- selectie & detailpaneel ---------- */
@@ -3077,6 +3249,7 @@ $('popLayers').addEventListener('click', e => {
   if(opt.dataset.layer==='labels') showLabels = !showLabels;
   if(opt.dataset.layer==='nopoly') showNoPoly = !showNoPoly;
   if(opt.dataset.layer==='spots'){ showSpots = !showSpots; if(showSpots){ startSpots(); redrawOverlays(); } }
+  if(opt.dataset.layer==='world'){ showWorld = !showWorld; if(showWorld) loadWorldPoints(); }
   opt.classList.toggle('on');
   opt.querySelector('.sw').classList.toggle('on');
   applyVisibility();
@@ -3097,7 +3270,7 @@ let spots = [], agenda = [], spotsAt = null, spotsError = null;
 // 'all' (wereldwijd), 'onff', of een programmacode zoals 'PAFF' (één land).
 // Wereldwijd is de fabrieksinstelling; wie ooit iets anders koos, krijgt dat
 // terug bij elke volgende start — zie Instellingen → Spots-filter.
-let showSpots = false, spotFilter = recall('spotFilter') || 'all', spotTab = 'spots', spotTimer = null, here = null;
+let showSpots = true, spotFilter = recall('spotFilter') || 'all', spotTab = 'spots', spotTimer = null, here = null;
 let agendaSkipped = 0;
 
 function startSpots(){
@@ -3457,6 +3630,9 @@ $('setSpotFilter').addEventListener('click', e=>{
 $('setSpotCountry').addEventListener('change', e=>{
   setSpotFilter(e.target.value || 'all');
 });
+$('setWorldCountry').addEventListener('change', e=>{
+  setWorldFilter(e.target.value || 'all');
+});
 
 /* ---------- spotdetail ---------- */
 function openSpot(id){
@@ -3697,6 +3873,7 @@ function loadSettingsUI(){
   $('setCallP').value = cfg.callp;
   $('setGrid').value  = cfg.grid;
   syncSpotFilterUI();
+  syncWorldFilterUI();
   [...$('setView').children].forEach(b => b.classList.toggle('on', b.dataset.view2 === cfg.view));
   [...$('setLang').children].forEach(b => b.classList.toggle('on', b.dataset.lang === langPref));
   checkGrid();
@@ -4005,6 +4182,7 @@ function buildEmbed(){
   const prov = $('embProv').value.trim(); if(prov) q.push('prov=' + encodeURIComponent(prov));
   const lg   = $('embLang').value.trim(); if(lg)   q.push('lang=' + encodeURIComponent(lg));
   if($('embSpots').checked) q.push('spots=1');
+  if($('embWorld').checked) q.push('world=1');
   $('embCode').textContent =
 `<iframe src="${base}?${q.join('&')}"
         width="100%" height="600" style="border:0"
@@ -4012,6 +4190,7 @@ function buildEmbed(){
 }
 ['embProv','embLang'].forEach(id => $(id).addEventListener('input', buildEmbed));
 $('embSpots').addEventListener('change', buildEmbed);
+$('embWorld').addEventListener('change', buildEmbed);
 $('embCopy').onclick = async () => {
   try{ await navigator.clipboard.writeText($('embCode').textContent);
        showStatus('in', t('adm.copied'), ''); }

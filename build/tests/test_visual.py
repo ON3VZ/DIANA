@@ -13,7 +13,8 @@ def routes(ctx):
     ctx.route(re.compile(r"https://docs\.google\.com/.*"), lambda r: r.abort())
 
 with sync_playwright() as p:
-    br=p.chromium.launch()
+    br=p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
+                          if __import__('os').path.exists("/opt/pw-browsers/chromium-1194/chrome-linux/chrome") else None)
     ctx=br.new_context(service_workers="block", viewport={"width":390,"height":844}, has_touch=True); routes(ctx)
     pg=ctx.new_page(); pg.goto(BASE, wait_until="load"); pg.wait_for_timeout(2000)
 

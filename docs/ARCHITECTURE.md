@@ -45,6 +45,7 @@ it does not introduce a new data source.
 | `data/onff-points.geojson` | small | the map, on load (optional — a missing file is not an error) | one `Point` per reference that exists on the ONFF list but has **no boundary** in the KMZ |
 | `data/onff-activity.json` | 39 kB | the Heatmap, as a fallback | QSO count and last-activation date per reference, taken from the WWFF directory |
 | `data/wwff-programs.json` | 7.5 kB | the Spots screen and Settings, to fill the "one specific country" list | every WWFF programme in the directory (worldwide) mapped to its country — has nothing to do with which zones the map draws |
+| `data/wwff-world.geojson` | 9.4 MB (≈1.4 MB gzipped) | the map, on load (optional — a missing file just leaves the layer empty) | one `Point` per **active, non-ONFF** WWFF reference worldwide (~64,700 of them), with only `ref` and `name` — never a boundary, for the same reason `onff-points.geojson` never invents one |
 | `data/onff-index.json` | 210 kB | **not loaded by the app** — it exists for tooling, reports and anything built alongside Diana | the zone list **without geometry**: reference, name, province, area, centroid, bounding box, plus a `points` array covering the boundary-less references (including those with no known coordinate, which therefore appear in no other file) |
 | `data/meta.json` | small | not shown to the user; provenance only | which source KMZ, which release date, which build settings, and how many boundary-less references were placed or left unplaced |
 
@@ -125,6 +126,14 @@ directory's own `program` column carries — so the app needs no separate
 lookup to decide which programme a live spot belongs to, only to put a country
 name on it.
 
+The same directory read, still ignoring `--program`, also writes every **active**
+reference that is *not* ONFF to `data/wwff-world.geojson` as a bare `Point`
+(`{ref, name}`, nothing else — no boundary exists for these either, and none
+is invented). At ~64,700 features this is by far the largest file Diana
+ships, so the map only loads it when the "other WWFF areas" layer is actually
+on (on by default — see §2.1.3) and renders it clustered rather than as
+64,700 individual markers.
+
 Two data traps the build guards against, both real: the directory marks "position
 unknown" as latitude/longitude `0,0` *and* locator `JJ00AA` (which converts to
 0.02, 0.04 — close to but not exactly zero), and one row carries an impossible
@@ -160,6 +169,28 @@ Coordinates come from three places, in this order:
 Unplaced references are not silently dropped: they are counted in `meta.json`,
 listed in the build's PR comment with an instruction to add a coordinate, and
 recorded in `onff-index.json`. As of the current data there are none.
+
+### 2.1.3 Other WWFF areas, worldwide
+
+The map itself only ever draws ONFF (Belgium). Everything else in the WWFF
+directory — roughly 64,700 active references across ~180 other programmes —
+is available as a separate, optional layer sourced from `data/wwff-world.geojson`
+(§2.1.1). Points only, same "point ≠ boundary" rule as §2.1.2, and drawn with
+MapLibre's built-in `cluster:true` GeoJSON clustering so a world-zoom view
+shows a manageable number of circles instead of 64,700 overlapping dots;
+clicking a cluster zooms in, clicking an individual point shows its reference
+and name in a popup.
+
+On by default (`showWorld = true`), matching the "everything worldwide"
+default chosen for spots — see §2.3. It can be narrowed to one country from
+Settings (`worldFilter`, stored under `localStorage['diana.worldFilter']`),
+reusing the same `data/wwff-programs.json` lookup and the same `refProgram()`
+helper as the spots filter, deliberately kept as a **separate** setting from
+it: showing "other WWFF areas" on the map and filtering which live spots
+appear are two different questions, even though they draw on the same
+underlying data. An embed (`?embed=1`) keeps this layer off unless the page
+explicitly opts in with `?world=1`, so an already-published `<iframe>` never
+changes appearance just because Diana's own default changed.
 
 ### 2.2 The ONFF activation-history sheet (heatmap)
 
@@ -199,7 +230,9 @@ or is unpublished.
 ### 2.3 WWFF Spotline (live spots, agenda, self-spotting)
 
 No API key. Refreshed every 30 seconds while a Spots-related screen is
-visible, paused when the browser tab is hidden.
+visible, paused when the browser tab is hidden. The map's spots/agenda layer
+(`showSpots`) is **on by default**, so `startSpots()` also runs once at
+startup rather than only when a visitor opens the Spots screen.
 
 | Endpoint | Used for |
 |---|---|
@@ -283,7 +316,8 @@ never called during normal browsing. Full flow in [ADMIN.md](ADMIN.md).
 |---|---|---|
 | `localStorage` key `diana.lang` | language preference: a language code, or `auto` to follow the browser. Absent means English | No |
 | `localStorage` keys `diana.call` / `diana.callp` / `diana.grid` / `diana.view` | callsign, portable callsign, grid locator, home-view preference | No |
-| `localStorage` keys `diana.installed` / `diana.inst.asked` | whether the app was installed, and whether the install banner has already been dismissed once | No |
+| `localStorage` keys `diana.installed` / `diana.inst.asked` | whether the app was installed, and whether the install banner has already been dismissed once (the banner then stays hidden for good — Settings' own "Install as an app" card keeps working regardless, it is not gated on this flag) | No |
+| `localStorage` keys `diana.spotFilter` / `diana.worldFilter` | which spots/agenda items to show (`'all'`, `'onff'`, or a programme code), and the same choice for the "other WWFF areas" map layer — two independent settings, see §2.1.3 and §2.3 | No |
 | `localStorage` (admin keys) | remembered repository/branch/path, and the GitHub token **only if the "remember" checkbox was ticked** | No |
 | Session GPX track (in memory / downloaded file) | an activation session's GPS trace | Not stored at all beyond the download — never uploaded anywhere |
 | Cache Storage (service worker) | app shell, the three `data/*.json` files, map tiles (LRU-capped) | No — per browser profile |
@@ -303,11 +337,11 @@ that has to be fresh.**
 
 | Request | Strategy |
 |---|---|
-| App shell (`index.html`, `manifest.webmanifest`, vendored MapLibre, the three `data/*.json` files, in both possible layouts) | cache-first, refreshed opportunistically |
+| App shell (`index.html`, `manifest.webmanifest`, vendored MapLibre, every `data/*.json`/`data/*.geojson` file including `wwff-world.geojson`, in both possible layouts) | cache-first, refreshed opportunistically |
 | Map tiles (`tiles.openfreemap.org`) | cache-first, own cache bucket, roughly LRU-trimmed at 3000 entries (~60 MB) |
 | Live data (`spots.wwff.co`, `docs.google.com`) | network-first; falls back to the last cached response only if the network request fails, so a visitor is never shown stale spots without the app having tried for fresh ones first |
 
-Caches are versioned (`diana-v1-shell`, `diana-v1-tiles`); a version bump in
+Caches are versioned (`diana-v3-shell`, `diana-v3-tiles`); a version bump in
 `sw.js` drops every old cache on activation.
 
 ---

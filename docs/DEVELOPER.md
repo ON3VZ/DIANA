@@ -23,6 +23,7 @@ diana/
 │  ├─ onff-points.geojson   references with no boundary, as Points
 │  ├─ onff-activity.json    QSO count + last activation per reference
 │  ├─ wwff-programs.json    every WWFF programme worldwide → its country (for the spots filter)
+│  ├─ wwff-world.geojson    every active non-ONFF WWFF reference worldwide, as bare points
 │  ├─ onff-index.json
 │  └─ meta.json
 ├─ overrides.json     manual name corrections, keyed by reference number
@@ -202,9 +203,13 @@ code, via a repository variable `ONFF_REFS_CSV`.
    `data/onff-activity.json`, which the app's heatmap uses when the ONFF sheet
    is unreachable. Separately — over the **whole** directory, ignoring
    `--program` — every programme code is tallied against its most common
-   `country` value and written to `data/wwff-programs.json`; the map stays
-   ONFF-only regardless, this file only feeds the spots screen's country
-   picker.
+   `country` value and written to `data/wwff-programs.json`; and every active
+   reference that is *not* ONFF is written to `data/wwff-world.geojson` as a
+   bare `{ref, name}` Point (no boundary — same rule as the boundary-less ONFF
+   references above). The map's own zones stay ONFF-only regardless; these two
+   files feed, respectively, the spots screen's country picker and the
+   optional "other WWFF areas" map layer (on by default, see
+   [ARCHITECTURE.md §2.1.3](ARCHITECTURE.md#213-other-wwff-areas-worldwide)).
 8. Diffs the new output against the previous release and writes
    `report.md` — new zones, removed zones, boundary changes, and how many
    boundary-less references were placed or left unplaced.

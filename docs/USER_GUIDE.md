@@ -93,12 +93,21 @@ the layers button like any other layer.
 Panels at the bottom of the screen — a zone's details, a spot's details, the
 heatmap panel — close by **swiping them down**, as well as with the × button.
 
-Turning on the **Spots** map layer (toggle on the map screen, or `?spots=1`
-in the URL) adds a green pulsing icon for each currently active spot and a
-dashed lighter-orange marker for each announced-but-not-yet-active agenda
-item, plus an arc line from your own position (GPS, or your saved locator)
-to each one, labelled with frequency. **⤢ Zoom to all spots** re-frames the
-map to fit everything currently shown, including your own position.
+The **Spots** map layer is **on by default**: a green pulsing icon for each
+currently active spot and a dashed lighter-orange marker for each
+announced-but-not-yet-active agenda item, plus an arc line from your own
+position (GPS, or your saved locator) to each one, labelled with frequency.
+**⤢ Zoom to all spots** re-frames the map to fit everything currently shown,
+including your own position. Switch it off from the map's layers button, or
+force it on from a URL with `?spots=1`.
+
+Also on by default: **other WWFF areas**, every active WWFF reference
+worldwide that isn't in Belgium (~64,700 of them), shown as small clustered
+dots that split apart as you zoom in — tap a cluster to zoom into it, tap a
+single dot for its reference and name. These are always shown as points,
+never as an outlined area — Diana only has real boundaries for ONFF. Switch
+the layer off from the layers button, or narrow it to one country from
+**Settings → Other WWFF areas** (see below).
 
 ### Spots (((·)))
 A list view of the same live spots and agenda, refreshed every 30 seconds.
@@ -130,8 +139,11 @@ currently loaded zones — never a meaningless blank world view.
 This is also where you set your **language** (the seven below, or "follow the
 browser"), your **Spots filter** — worldwide by default, or narrowed to ONFF
 only or to one specific WWFF country, the same choice as the quick control on
-the Spots screen, kept in sync with it — and where you **install Diana as an
-app**. Everything here is local to this device; see §Limitations.
+the Spots screen, kept in sync with it — your **Other WWFF areas** setting
+(worldwide by default, or narrowed to one country — a separate choice from
+the Spots filter, since one decides which map *points* you see and the other
+which live *spots* you see), and where you **install Diana as an app**.
+Everything here is local to this device; see §Limitations.
 
 ### Admin (⛭, hidden by default)
 For repository maintainers only — publishing new data and generating embed
@@ -191,8 +203,14 @@ site, anything that accepts HTML.
 | `?lang=en\|nl\|fr\|de\|da\|it\|es` | forces a language, overriding browser detection |
 | `?ref=ONFF-0104` | opens directly zoomed to one zone |
 | `?prov=antwerpen` | zooms to one Belgian province |
-| `?spots=1` | turns the live-spots map layer on immediately |
+| `?spots=1` | turns the live-spots map layer on |
+| `?world=1` | turns the "other WWFF areas" map layer on |
 | `?admin=1` | reveals the Admin panel (not meaningful in an embed; documented here only for completeness) |
+
+Both layers default to **off** inside an embed regardless of Diana's own
+default elsewhere, so an `<iframe>` already published somewhere never changes
+appearance on its own — each layer only appears in an embed when its
+parameter is explicitly present.
 
 The Admin panel (§Admin above) includes a small form that builds this exact
 snippet for you from a province, language and spots choice — see

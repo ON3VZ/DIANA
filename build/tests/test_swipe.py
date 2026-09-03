@@ -29,7 +29,8 @@ def swipe(pg, sel, dy=140):
     }""", [sel, dy])
 
 with sync_playwright() as p:
-    br=p.chromium.launch()
+    br=p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
+                          if __import__('os').path.exists("/opt/pw-browsers/chromium-1194/chrome-linux/chrome") else None)
     ctx=br.new_context(service_workers="block", viewport={"width":390,"height":844},
                        has_touch=True, is_mobile=True); routes(ctx)
     pg=ctx.new_page()
