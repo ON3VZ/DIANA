@@ -16,7 +16,7 @@ python3 build/kmz2geojson.py \
     --kmz "$KMZ" \
     --out data \
     --report report.md \
-    --refs-csv /root/.claude/uploads/wwff_directory.csv \
+    --refs-csv https://wwff.co/wwff-data/wwff_directory.csv \
     --overrides overrides.json
 
 echo "✓ Klaar" >&2
