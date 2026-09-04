@@ -1,0 +1,25 @@
+{
+  "id": "/diana/",
+  "name": "Diana — ONFF Zones & Spots",
+  "short_name": "Diana",
+  "description": "Map of the Belgian ONFF nature reserves with live WWFF spots, usable offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#f6f4ee",
+  "theme_color": "#1b4332",
+  "lang": "en",
+  "categories": ["navigation", "utilities"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Spots", "url": "./index.html?spots=1" },
+    { "name": "Spot yourself", "url": "./index.html#self" }
+  ]
+}
