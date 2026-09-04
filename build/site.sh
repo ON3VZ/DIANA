@@ -2,7 +2,6 @@
 set -e
 
 # Vind de meest recent geupload .kmz file in source/
-# (using modification time as proxy voor upload moment)
 KMZ=$(ls -t source/*.kmz 2>/dev/null | head -1)
 
 if [ -z "$KMZ" ]; then
@@ -18,5 +17,13 @@ python3 build/kmz2geojson.py \
     --report report.md \
     --refs-csv https://wwff.co/wwff-data/wwff_directory.csv \
     --overrides overrides.json
+
+# Website samenstellen: web/ + data/ → _site/
+SITE="${1:-./_site}"
+mkdir -p "$SITE"
+cp -r web/* "$SITE/"
+cp data/*.json "$SITE/"
+cp data/*.geojson "$SITE/"
+touch "$SITE/.nojekyll"
 
 echo "✓ Klaar" >&2
