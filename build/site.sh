@@ -1,24 +1,22 @@
-#!/usr/bin/env bash
-# Bouwt de map die gepubliceerd wordt. Alles wat hier niet in staat, komt niet online.
-#
-# Belangrijk: source/ blijft er bewust buiten. Het ONFF-KMZ wordt door ONFF
-# verspreid via een groups.io achter lidmaatschap; dat bestand hoort niet
-# ongevraagd op een publieke URL te staan.
-set -euo pipefail
+#!/bin/bash
+set -e
 
-OUT="${1:-_site}"
-rm -rf "$OUT"
-mkdir -p "$OUT/data"
+# Vind de meest recent geupload .kmz file in source/
+# (using modification time as proxy voor upload moment)
+KMZ=$(ls -t source/*.kmz 2>/dev/null | head -1)
 
-cp -r web/. "$OUT/"
-cp data/onff.geojson data/onff-index.json data/meta.json "$OUT/data/"
-# Uit de WWFF-directory, dus pas aanwezig na een build die hem kon ophalen.
-# (Als 'if', niet als '[ … ] && cp' — met set -e stopt het script daar anders op.)
-for extra in data/onff-points.geojson data/onff-activity.json data/wwff-programs.json data/wwff-world.geojson; do
-  if [ -f "$extra" ]; then
-    cp "$extra" "$OUT/data/"
-  fi
-done
+if [ -z "$KMZ" ]; then
+    echo "Fout: geen .kmz file gevonden in source/" >&2
+    exit 1
+fi
 
-echo "Gepubliceerd naar $OUT:"
-find "$OUT" -type f | sed "s|^$OUT/|  |" | sort
+echo "Verwerking: $KMZ" >&2
+
+python3 build/kmz2geojson.py \
+    --kmz "$KMZ" \
+    --out data \
+    --report report.md \
+    --refs-csv /root/.claude/uploads/wwff_directory.csv \
+    --overrides overrides.json
+
+echo "✓ Klaar" >&2
